@@ -71,12 +71,16 @@ final class SCCoAPUDPTransportLayer: NSObject {
     }
     
     fileprivate func setupConnection(forHost host: String, port: UInt16) {
-        let connection = mustGetConnection(forHost: host, port: port)
+        let connection = setupStateUpdateHandler(for: mustGetConnection(forHost: host, port: port), withHostPort: HostPortKey(host: host, port: port))
+        connection.start(queue: DispatchQueue.global(qos: .utility))
+    }
+
+    private func setupStateUpdateHandler(for connection: NWConnection, withHostPort hostPort: HostPortKey) -> NWConnection {
         connection.stateUpdateHandler = { [weak self] newState in
             switch newState {
             case .failed(let error):
                 os_log("Connection FAILED", log: .default, type: .error, "\(error)")
-                self?.connections[HostPortKey(host: host, port: port)]?.cancel()
+                self?.connections[HostPortKey(host: hostPort.host, port: hostPort.port)]?.cancel()
                 guard let self = self else { return }
                 self.transportLayerDelegate?.transportLayerObject(self, didFailWithError: error as NSError)
             case .setup:
@@ -87,13 +91,15 @@ final class SCCoAPUDPTransportLayer: NSObject {
                 os_log("Connection entered PREPAIRING state", log: .default, type: .info)
             case .ready:
                 os_log("Connection entered READY state", log: .default, type: .info)
+                guard let self = self else { return }
+                self.startReads(from: connection, withHostPort: hostPort)
             case .cancelled:
                 os_log("Connection entered is CANCELLED", log: .default, type: .info)
             @unknown default:
                 os_log("Connection is in UNKNOWN state", log: .default, type: .info)
             }
         }
-        connection.start(queue: DispatchQueue.global(qos: .utility))
+        return connection
     }
 
     private func mustGetConnection(forHost host: String, port: UInt16) -> NWConnection {
@@ -106,7 +112,20 @@ final class SCCoAPUDPTransportLayer: NSObject {
         return connection
     }
 
-
+    private func startReads(from connection: NWConnection, withHostPort hostPort: HostPortKey) {
+        while connection.state == .ready {
+            connection.receiveMessage { [weak self] data, context, complete, error in
+                guard let self = self else { return }
+                if error != nil {
+                    self.transportLayerDelegate.transportLayerObject(self, didFailWithError: error! as NSError)
+                    return
+                }
+                if let data = data {
+                    self.transportLayerDelegate.transportLayerObject(self, didReceiveData: data, fromHost: hostPort.host, port: hostPort.port)
+                }
+            }
+        }
+    }
 }
 
 extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
@@ -128,21 +147,41 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
     }
     
     func startListening() throws {
-        //        if connection == nil && !setUpUdpSocket() {
-        //            connection.close()
-        //            connection = nil
-        //            throw SCCoAPTransportLayerError.setupError(errorDescription: "Failed to setup UDP socket")
-        //        }
-    }
-}
+        listener = try NWListener(using: .udp, on: 5683)
+        listener?.newConnectionHandler = { [weak self] newConnection in
+            guard let self = self else { return }
+            switch newConnection.endpoint {
+            case .hostPort(host: let host, port: let port):
+                let port = port.rawValue
+                switch host {
+                case .name(let name, _):
+                    let hostPort = HostPortKey(host: name, port: port)
+                    let newConnection = self.setupStateUpdateHandler(for: newConnection, withHostPort: hostPort)
+                    self.connections[hostPort] = newConnection
+                case .ipv4(let ip4):
+                    guard let ip = String(data: ip4.rawValue, encoding: .utf8) else { return }
+                    let hostPort = HostPortKey(host: ip, port: port)
+                    let newConnection = self.setupStateUpdateHandler(for: newConnection, withHostPort: hostPort)
+                    self.connections[hostPort] = newConnection
+                case .ipv6(let ip6):
+                    guard let ip = String(data: ip6.rawValue, encoding: .utf8) else { return }
+                    let hostPort = HostPortKey(host: ip, port: port)
+                    let newConnection = self.setupStateUpdateHandler(for: newConnection, withHostPort: hostPort)
+                    self.connections[hostPort] = newConnection
+                @unknown default:
+                    return
+                }
+            case .service(name: _, type: _, domain: _, interface: _),
+                 .unix(path: _),
+                 .url(_):
+                return
+            @unknown default:
+                return
+            }
+            newConnection.start(queue: DispatchQueue.global(qos: .utility))
 
-extension SCCoAPUDPTransportLayer: GCDAsyncUdpSocketDelegate {
-    func udpSocket(_ sock: GCDAsyncUdpSocket!, didReceive data: Data!, fromAddress address: Data!, withFilterContext filterContext: Any!) {
-        transportLayerDelegate.transportLayerObject(self, didReceiveData: data, fromHost: GCDAsyncUdpSocket.host(fromAddress: address), port: GCDAsyncUdpSocket.port(fromAddress: address))
-    }
-    
-    func udpSocket(_ sock: GCDAsyncUdpSocket!, didNotSendDataWithTag tag: Int, dueToError error: Error!) {
-        transportLayerDelegate.transportLayerObject(self, didFailWithError: error as NSError)
+        }
+        listener?.start(queue: DispatchQueue.global(qos: .utility))
     }
 }
 
