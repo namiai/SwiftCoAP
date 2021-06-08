@@ -37,7 +37,7 @@ public protocol SCServerDelegate: AnyObject {
 public enum SCServerErrorCode: Int {
     case transportLayerError, receivedInvalidMessageError, noResponseExpectedError
     
-    func descriptionString() -> String {
+    public func descriptionString() -> String {
         switch self {
         case .transportLayerError:
             return "Failed to send data via the given Transport Layer"
@@ -80,10 +80,10 @@ public class SCServer: NSObject {
     
     //INTERNAL PROPERTIES (allowed to modify)
     
-    weak var delegate: SCServerDelegate?
-    var autoBlock2SZX: UInt? = 2 { didSet { if let newValue = autoBlock2SZX { autoBlock2SZX = min(6, newValue) } } } //If not nil, Block2 transfer will be used automatically when the payload size exceeds the value 2^(autoBlock2SZX + 4). Valid Values: 0-6.
-    var autoWellKnownCore = true //If set to true, the server will automatically provide responses for the resource "well-known/core" with its current resources.
-    lazy var resources = [SCResourceModel]()
+    public weak var delegate: SCServerDelegate?
+    public var autoBlock2SZX: UInt? = 2 { didSet { if let newValue = autoBlock2SZX { autoBlock2SZX = min(6, newValue) } } } //If not nil, Block2 transfer will be used automatically when the payload size exceeds the value 2^(autoBlock2SZX + 4). Valid Values: 0-6.
+    public var autoWellKnownCore = true //If set to true, the server will automatically provide responses for the resource "well-known/core" with its current resources.
+    public lazy var resources = [SCResourceModel]()
     
     //PRIVATE PROPERTIES
     fileprivate var transportLayerObject: SCCoAPTransportLayerProtocol!
@@ -112,21 +112,21 @@ public class SCServer: NSObject {
     
     //Start server manually, with the given port
     
-    func start() throws {
+    public func start() throws {
         try self.transportLayerObject?.startListening()
     }
     
     
     //Close UDP socket and server ativity
     
-    func close() {
+    public func close() {
         self.transportLayerObject?.closeTransmission()
     }
     
     
     //Reset Context Information
     
-    func reset() {
+    public func reset() {
         pendingMessagesForEndpoints = [:]
         registeredObserverForResource = [:]
         block1UploadsForEndpoints = [:]
@@ -136,7 +136,7 @@ public class SCServer: NSObject {
     
     //Call this method when your resource is ready to process a separate response. The concerned resource must return true for the method `willHandleDataAsynchronouslyForGet(...)`. It is necessary to pass the original message and the resource (both received in `willHandleDataAsynchronouslyForGet`) so that the server is able to retrieve the current context. Additionay, you have to pass the typical "values" tuple which form the response (as described in SCMessage -> SCResourceModel)
     
-    func didCompleteAsynchronousRequestForOriginalMessage(_ message: SCMessage, resource: SCResourceModel, values: (statusCode: SCCodeValue, payloadData: Data?, contentFormat: SCContentFormat?, locationUri: String?)) {
+    public func didCompleteAsynchronousRequestForOriginalMessage(_ message: SCMessage, resource: SCResourceModel, values: (statusCode: SCCodeValue, payloadData: Data?, contentFormat: SCContentFormat?, locationUri: String?)) {
         let type: SCType = message.type == .confirmable ? .confirmable : .nonConfirmable
         if let separateMessage = createMessageForValues((values.statusCode, values.payloadData, values.contentFormat, values.locationUri), withType: type, relatedMessage: message, requestedResource: resource) {
             separateMessage.messageId = UInt16(arc4random_uniform(0xFFFF) &+ 1)
@@ -147,7 +147,7 @@ public class SCServer: NSObject {
     
     //Call this method when the given resource has updated its data representation in order to notify all registered users (and has "observable" set to true)
     
-    func updateRegisteredObserversForResource(_ resource: SCResourceModel) {
+    public func updateRegisteredObserversForResource(_ resource: SCResourceModel) {
         if var valueArray = registeredObserverForResource[resource] {
             for i in 0 ..< valueArray.count {
                 let (token, hostname, port, sequenceNumber, prefferredBlock2SZX) = valueArray[i]
@@ -529,7 +529,7 @@ public class SCServer: NSObject {
         return currentPayload as Data?
     }
     
-    func respondWithErrorCode(_ responseCode: SCCodeValue, diagnosticPayload: Data?, forMessage message: SCMessage, withType type: SCType) {
+    public func respondWithErrorCode(_ responseCode: SCCodeValue, diagnosticPayload: Data?, forMessage message: SCMessage, withType type: SCType) {
         if let hostname = message.hostName, let port = message.port {
             sendMessageWithType(type, code: responseCode, payload: diagnosticPayload, messageId: message.messageId, hostname: hostname, port: port, token: message.token)
             delegate?.swiftCoapServer(self, didRejectRequestWithCode: message.code, forPath: message.completeUriPath(), withResponseCode: responseCode)

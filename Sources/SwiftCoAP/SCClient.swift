@@ -59,13 +59,13 @@ public class SCClient: NSObject {
     
     //INTERNAL PROPERTIES (allowed to modify)
     
-    weak var delegate: SCClientDelegate?
-    var sendToken = true   //If true, a token with 4-8 Bytes is sent
-    var autoBlock1SZX: UInt? = 2 { didSet { if let newValue = autoBlock1SZX { autoBlock1SZX = min(6, newValue) } } } //If not nil, Block1 transfer will be used automatically when the payload size exceeds the value 2^(autoBlock1SZX + 4). Valid Values: 0-6.
+    public weak var delegate: SCClientDelegate?
+    public var sendToken = true   //If true, a token with 4-8 Bytes is sent
+    public var autoBlock1SZX: UInt? = 2 { didSet { if let newValue = autoBlock1SZX { autoBlock1SZX = min(6, newValue) } } } //If not nil, Block1 transfer will be used automatically when the payload size exceeds the value 2^(autoBlock1SZX + 4). Valid Values: 0-6.
     
-    var httpProxyingData: (hostName: String, port: UInt16)?     //If not nil, all messages will be sent via http to the given proxy address
-    var cachingActive = false   //Activates caching
-    var disableRetransmissions = false
+    public var httpProxyingData: (hostName: String, port: UInt16)?     //If not nil, all messages will be sent via http to the given proxy address
+    public var cachingActive = false   //Activates caching
+    public var disableRetransmissions = false
     
     //READ-ONLY PROPERTIES
     
@@ -92,7 +92,7 @@ public class SCClient: NSObject {
         self.transportLayerObject.transportLayerDelegate = self
     }
     
-    func sendCoAPMessage(_ message: SCMessage, hostName: String, port: UInt16) {
+    public func sendCoAPMessage(_ message: SCMessage, hostName: String, port: UInt16) {
         currentMessageId = (currentMessageId % 0xFFFF) + 1
         
         message.hostName = hostName
@@ -146,7 +146,7 @@ public class SCClient: NSObject {
     
     
     // Cancels observe directly, sending the previous message with an Observe-Option Value of 1. Only effective, if the previous message initiated a registration as observer with the respective server. To cancel observer indirectly (forget about the current state) call "closeTransmission()" or send another Message (this cleans up the old state automatically)
-    func cancelObserve() {
+    public func cancelObserve() {
         let cancelMessage = SCMessage(code: SCCodeValue(classValue: 0, detailValue: 01)!, type: .nonConfirmable, payload: nil)
         cancelMessage.token = messageInTransmission.token
         cancelMessage.options = messageInTransmission.options
@@ -164,7 +164,7 @@ public class SCClient: NSObject {
     
     //Closes the transmission. It is recommended to call this method anytime you do not expect to receive a response any longer.
     
-    func closeTransmission() {
+    public func closeTransmission() {
         transportLayerObject.closeTransmission()
         messageInTransmission = nil
         isMessageInTransmission = false
