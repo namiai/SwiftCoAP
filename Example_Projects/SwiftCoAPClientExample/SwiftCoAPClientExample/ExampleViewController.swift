@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import SwiftCoAP
 
 class ExampleViewController: UIViewController {
     @IBOutlet weak var textView: UITextView!

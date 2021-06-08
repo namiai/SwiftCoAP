@@ -14,7 +14,7 @@ import os.log
 //MARK:
 //MARK: SC Coap Transport Layer Error Enumeration
 
-enum SCCoAPTransportLayerError: Error {
+public enum SCCoAPTransportLayerError: Error {
     case setupError(errorDescription: String), sendError(errorDescription: String)
 }
 
@@ -22,7 +22,7 @@ enum SCCoAPTransportLayerError: Error {
 //MARK:
 //MARK: SC CoAP Transport Layer Delegate Protocol declaration. It is implemented by SCClient to receive responses. Your custom transport layer handler must call these callbacks to notify the SCClient object.
 
-protocol SCCoAPTransportLayerDelegate: AnyObject {
+public protocol SCCoAPTransportLayerDelegate: AnyObject {
     //CoAP Data Received
     func transportLayerObject(_ transportLayerObject: SCCoAPTransportLayerProtocol, didReceiveData data: Data, fromHost host: String, port: UInt16)
     
@@ -34,7 +34,7 @@ protocol SCCoAPTransportLayerDelegate: AnyObject {
 //MARK:
 //MARK: SC CoAP Transport Layer Protocol declaration
 
-protocol SCCoAPTransportLayerProtocol: AnyObject {
+public protocol SCCoAPTransportLayerProtocol: AnyObject {
     //SCClient uses this property to assign itself as delegate
     var transportLayerDelegate: SCCoAPTransportLayerDelegate! { get set }
     
@@ -58,8 +58,8 @@ struct HostPortKey: Hashable {
 //MARK:
 //MARK: SC CoAP UDP Transport Layer: This class is the default transport layer handler, sending data via UDP with help of GCDAsyncUdpSocket. If you want to create a custom transport layer handler, you have to create a custom class and adopt the SCCoAPTransportLayerProtocol. Next you have to pass your class to the init method of SCClient: init(delegate: SCClientDelegate?, transportLayerObject: SCCoAPTransportLayerProtocol). You will than get callbacks to send CoAP data and have to inform your delegate (in this case an object of type SCClient) when you receive a response by using the callbacks from SCCoAPTransportLayerDelegate.
 
-final class SCCoAPUDPTransportLayer: NSObject {
-    weak var transportLayerDelegate: SCCoAPTransportLayerDelegate!
+public final class SCCoAPUDPTransportLayer: NSObject {
+    weak public var transportLayerDelegate: SCCoAPTransportLayerDelegate!
     var connections: [HostPortKey: NWConnection] = [:]
     var listener: NWListener?
     var port: UInt16
@@ -129,7 +129,7 @@ final class SCCoAPUDPTransportLayer: NSObject {
 }
 
 extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
-    func sendCoAPData(_ data: Data, toHost host: String, port: UInt16) throws {
+    public func sendCoAPData(_ data: Data, toHost host: String, port: UInt16) throws {
         let connection = mustGetConnection(forHost: host, port: port)
         connection.send(content: data, completion: .contentProcessed{ [weak self] error in
             guard let self = self else { return }
@@ -139,14 +139,14 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
         })
     }
     
-    func closeTransmission() {
+    public func closeTransmission() {
         connections.forEach{
             $0.value.cancel()
         }
         connections = [:]
     }
     
-    func startListening() throws {
+    public func startListening() throws {
         listener = try NWListener(using: .udp, on: 5683)
         listener?.newConnectionHandler = { [weak self] newConnection in
             guard let self = self else { return }
@@ -189,7 +189,7 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
 //MARK:
 //MARK: SC Type Enumeration: Represents the CoAP types
 
-enum SCType: Int {
+public enum SCType: Int {
     case confirmable, nonConfirmable, acknowledgement, reset
     
     func shortString() -> String {
@@ -238,7 +238,7 @@ enum SCType: Int {
 //MARK:
 //MARK: SC Option Enumeration: Represents the CoAP options
 
-enum SCOption: Int {
+public enum SCOption: Int {
     case ifMatch = 1
     case uriHost = 3
     case etag = 4
@@ -410,7 +410,7 @@ enum SCOption: Int {
 //MARK:
 //MARK: SC Code Sample Enumeration: Provides the most common CoAP codes as raw values
 
-enum SCCodeSample: Int {
+public enum SCCodeSample: Int {
     case empty = 0
     case get = 1
     case post = 2
@@ -514,7 +514,7 @@ enum SCCodeSample: Int {
 //MARK:
 //MARK: SC Content Format Enumeration
 
-enum SCContentFormat: UInt {
+public enum SCContentFormat: UInt {
     case plain = 0
     case linkFormat = 40
     case xml = 41
@@ -556,7 +556,7 @@ enum SCContentFormat: UInt {
 //MARK:
 //MARK: SC Code Value struct: Represents the CoAP code. You can easily apply the CoAP code syntax c.dd (e.g. SCCodeValue(classValue: 0, detailValue: 01) equals 0.01)
 
-struct SCCodeValue: Equatable {
+public struct SCCodeValue: Equatable {
     let classValue: UInt8
     let detailValue: UInt8
     
@@ -607,7 +607,7 @@ struct SCCodeValue: Equatable {
     }
 }
 
-func ==(lhs: SCCodeValue, rhs: SCCodeValue) -> Bool {
+public func ==(lhs: SCCodeValue, rhs: SCCodeValue) -> Bool {
     return lhs.classValue == rhs.classValue && lhs.detailValue == rhs.detailValue
 }
 
@@ -615,7 +615,7 @@ func ==(lhs: SCCodeValue, rhs: SCCodeValue) -> Bool {
 //MARK:
 //MARK: UInt Extension
 
-public extension UInt {
+extension UInt {
     func toByteArray() -> [UInt8] {
         let byteLength = UInt(ceil(log2(Double(self + 1)) / 8))
         var byteArray = [UInt8]()
@@ -665,7 +665,7 @@ extension Data {
 //MARK:
 //MARK: SC Allowed Route Enumeration
 
-enum SCAllowedRoute: UInt {
+public enum SCAllowedRoute: UInt {
     case get = 0b1
     case post = 0b10
     case put = 0b100
@@ -690,7 +690,7 @@ enum SCAllowedRoute: UInt {
 //MARK:
 //MARK: Resource Implementation, used for SCServer
 
-class SCResourceModel: NSObject {
+public class SCResourceModel: NSObject {
     let name: String // Name of the resource
     let allowedRoutes: UInt // Bitmask of allowed routes (see SCAllowedRoutes enum)
     var maxAgeValue: UInt! // If not nil, every response will contain the provided MaxAge value
@@ -733,7 +733,7 @@ class SCResourceModel: NSObject {
 //MARK:
 //MARK: SC Message IMPLEMENTATION
 
-class SCMessage: NSObject {
+public class SCMessage: NSObject {
     
     //MARK: Constants and Properties
     

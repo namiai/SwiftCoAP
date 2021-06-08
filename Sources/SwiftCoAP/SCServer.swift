@@ -12,7 +12,7 @@ import UIKit
 //MARK:
 //MARK: SC Server Delegate Protocol implementation
 
-protocol SCServerDelegate: AnyObject {
+public protocol SCServerDelegate: AnyObject {
     
     //Tells the delegate that an error occured during or before transmission (refer to the "SCServerErrorCode" Enum)
     func swiftCoapServer(_ server: SCServer, didFailWithError error: NSError)
@@ -34,7 +34,7 @@ protocol SCServerDelegate: AnyObject {
 //MARK:
 //MARK: SC Server Error Code Enumeration
 
-enum SCServerErrorCode: Int {
+public enum SCServerErrorCode: Int {
     case transportLayerError, receivedInvalidMessageError, noResponseExpectedError
     
     func descriptionString() -> String {
@@ -53,7 +53,7 @@ enum SCServerErrorCode: Int {
 //MARK:
 //MARK: SC Server IMPLEMENTATION
 
-class SCServer: NSObject {
+public class SCServer: NSObject {
     fileprivate class SCAddressWrapper: NSObject {
         let hostname: String
         let port: UInt16
@@ -543,7 +543,7 @@ class SCServer: NSObject {
 // MARK: SC CoAP Transport Layer Delegate
 
 extension SCServer: SCCoAPTransportLayerDelegate {
-    func transportLayerObject(_ transportLayerObject: SCCoAPTransportLayerProtocol, didReceiveData data: Data, fromHost host: String, port: UInt16) {
+    public func transportLayerObject(_ transportLayerObject: SCCoAPTransportLayerProtocol, didReceiveData data: Data, fromHost host: String, port: UInt16) {
         if let message = SCMessage.fromData(data) {
             message.hostName = host
             message.port = port
@@ -688,7 +688,7 @@ extension SCServer: SCCoAPTransportLayerDelegate {
         }
     }
     
-    func transportLayerObject(_ transportLayerObject: SCCoAPTransportLayerProtocol, didFailWithError error: NSError) {
+    public func transportLayerObject(_ transportLayerObject: SCCoAPTransportLayerProtocol, didFailWithError error: NSError) {
         notifyDelegateWithErrorCode(.transportLayerError)
     }
 }

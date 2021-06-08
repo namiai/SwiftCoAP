@@ -27,7 +27,7 @@ import UIKit
 //MARK:
 //MARK: SC Client Error Code Enumeration
 
-enum SCClientErrorCode: Int {
+public enum SCClientErrorCode: Int {
     case transportLayerSendError, messageInvalidForSendingError, receivedInvalidMessageError, noResponseExpectedError, proxyingError
     
     func descriptionString() -> String {
@@ -50,7 +50,7 @@ enum SCClientErrorCode: Int {
 //MARK:
 //MARK: SC Client IMPLEMENTATION
 
-class SCClient: NSObject {
+public class SCClient: NSObject {
     
     //MARK: Constants and Properties
     
@@ -339,7 +339,7 @@ class SCClient: NSObject {
 // MARK: SC CoAP Transport Layer Delegate
 
 extension SCClient: SCCoAPTransportLayerDelegate {
-    func transportLayerObject(_ transportLayerObject: SCCoAPTransportLayerProtocol, didReceiveData data: Data, fromHost host: String, port: UInt16) {
+    public func transportLayerObject(_ transportLayerObject: SCCoAPTransportLayerProtocol, didReceiveData data: Data, fromHost host: String, port: UInt16) {
         if let message = SCMessage.fromData(data) {
     
             //Check for spam
@@ -414,7 +414,7 @@ extension SCClient: SCCoAPTransportLayerDelegate {
         }
     }
     
-    func transportLayerObject(_ transportLayerObject: SCCoAPTransportLayerProtocol, didFailWithError error: NSError) {
+    public func transportLayerObject(_ transportLayerObject: SCCoAPTransportLayerProtocol, didFailWithError error: NSError) {
         notifyDelegateWithErrorCode(.transportLayerSendError)
         transmissionTimer?.invalidate()
         transmissionTimer = nil
