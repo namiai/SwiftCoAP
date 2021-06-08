@@ -1,0 +1,16 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "SwiftCoAP",
+        "repositoryURL": "https://github.com/namiai/SwiftCoAP",
+        "state": {
+          "branch": "swift_pm",
+          "revision": "489ab2a775bbf7eb8e582b22d923a7b0c38808d0",
+          "version": null
+        }
+      }
+    ]
+  },
+  "version": 1
+}

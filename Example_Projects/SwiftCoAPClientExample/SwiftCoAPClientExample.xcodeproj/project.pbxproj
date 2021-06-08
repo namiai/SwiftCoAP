@@ -3,10 +3,11 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 46;
+	objectVersion = 52;
 	objects = {
 
 /* Begin PBXBuildFile section */
+		49B812AE266F16B800E842E6 /* SwiftCoAP in Frameworks */ = {isa = PBXBuildFile; productRef = 49B812AD266F16B800E842E6 /* SwiftCoAP */; };
 		934E12081B1F858100441526 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 934E12071B1F858100441526 /* AppDelegate.swift */; };
 		934E120D1B1F858100441526 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 934E120B1B1F858100441526 /* Main.storyboard */; };
 		934E120F1B1F858100441526 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 934E120E1B1F858100441526 /* Images.xcassets */; };
@@ -51,6 +52,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				49B812AE266F16B800E842E6 /* SwiftCoAP in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -150,6 +152,7 @@
 			);
 			name = SwiftCoAPClientExample;
 			packageProductDependencies = (
+				49B812AD266F16B800E842E6 /* SwiftCoAP */,
 			);
 			productName = SwiftCoAPClientExample;
 			productReference = 934E12021B1F858100441526 /* SwiftCoAPClientExample.app */;
@@ -205,6 +208,7 @@
 			);
 			mainGroup = 934E11F91B1F858100441526;
 			packageReferences = (
+				49B812AC266F16B800E842E6 /* XCRemoteSwiftPackageReference "SwiftCoAP" */,
 			);
 			productRefGroup = 934E12031B1F858100441526 /* Products */;
 			projectDirPath = "";
@@ -386,7 +390,8 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 8.3;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;
-				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALIDATE_PRODUCT = YES;
 			};
@@ -398,7 +403,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				INFOPLIST_FILE = SwiftCoAPClientExample/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = "kordylewski.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "SwiftCoAPClientExample/SwiftCoAPClientExample-Bridging-Header.h";
@@ -414,7 +422,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				INFOPLIST_FILE = SwiftCoAPClientExample/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = "kordylewski.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "SwiftCoAPClientExample/SwiftCoAPClientExample-Bridging-Header.h";
@@ -436,7 +447,11 @@
 					"$(inherited)",
 				);
 				INFOPLIST_FILE = SwiftCoAPClientExampleTests/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = "kordylewski.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_SWIFT3_OBJC_INFERENCE = Default;
@@ -454,7 +469,11 @@
 					"$(inherited)",
 				);
 				INFOPLIST_FILE = SwiftCoAPClientExampleTests/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = "kordylewski.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_SWIFT3_OBJC_INFERENCE = Default;
@@ -494,6 +513,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		49B812AC266F16B800E842E6 /* XCRemoteSwiftPackageReference "SwiftCoAP" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/namiai/SwiftCoAP";
+			requirement = {
+				branch = swift_pm;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		49B812AD266F16B800E842E6 /* SwiftCoAP */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 49B812AC266F16B800E842E6 /* XCRemoteSwiftPackageReference "SwiftCoAP" */;
+			productName = SwiftCoAP;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 934E11FA1B1F858100441526 /* Project object */;
 }
