@@ -11,16 +11,16 @@ import UIKit
 //MARK:
 //MARK: SC Client Delegate Protocol declaration
 
-@objc protocol SCClientDelegate {
+public protocol SCClientDelegate: AnyObject {
     
     //Tells the delegate that a valid CoAP message was received
     func swiftCoapClient(_ client: SCClient, didReceiveMessage message: SCMessage)
     
     //Tells the delegate that an error occured during or before transmission (refer to the "SCClientErrorCode" Enum)
-    @objc optional func swiftCoapClient(_ client: SCClient, didFailWithError error: NSError)
+    func swiftCoapClient(_ client: SCClient, didFailWithError error: NSError)
     
     //Tells the delegate that the respective message was sent. The property "number" indicates the amount of (re-)transmission attempts
-    @objc optional func swiftCoapClient(_ client: SCClient, didSendMessage message: SCMessage, number: Int)
+    func swiftCoapClient(_ client: SCClient, didSendMessage message: SCMessage, number: Int)
 }
 
 
@@ -239,7 +239,7 @@ public class SCClient: NSObject {
         do {
             try transportLayerObject.sendCoAPData(data, toHost: host, port: port)
             if notifyDelegateAfterSuccess {
-                delegate?.swiftCoapClient?(self, didSendMessage: messageInTransmission, number: retransmissionCounter + 1)
+                delegate?.swiftCoapClient(self, didSendMessage: messageInTransmission, number: retransmissionCounter + 1)
             }
         }
         catch SCCoAPTransportLayerError.sendError(let errorDescription) {
@@ -252,11 +252,11 @@ public class SCClient: NSObject {
     }
     
     fileprivate func notifyDelegateWithTransportLayerErrorDescription(_ errorDescription: String) {
-        delegate?.swiftCoapClient?(self, didFailWithError: NSError(domain: SCMessage.kCoapErrorDomain, code: 0, userInfo: [NSLocalizedDescriptionKey : errorDescription]))
+        delegate?.swiftCoapClient(self, didFailWithError: NSError(domain: SCMessage.kCoapErrorDomain, code: 0, userInfo: [NSLocalizedDescriptionKey : errorDescription]))
     }
     
     fileprivate func notifyDelegateWithErrorCode(_ clientErrorCode: SCClientErrorCode) {
-        delegate?.swiftCoapClient?(self, didFailWithError: NSError(domain: SCMessage.kCoapErrorDomain, code: clientErrorCode.rawValue, userInfo: [NSLocalizedDescriptionKey : clientErrorCode.descriptionString()]))
+        delegate?.swiftCoapClient(self, didFailWithError: NSError(domain: SCMessage.kCoapErrorDomain, code: clientErrorCode.rawValue, userInfo: [NSLocalizedDescriptionKey : clientErrorCode.descriptionString()]))
     }
     
     fileprivate func handleBlock2WithMessage(_ message: SCMessage) {
