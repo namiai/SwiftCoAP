@@ -132,8 +132,9 @@ public final class SCCoAPUDPTransportLayer: NSObject {
 extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
     public func sendCoAPData(_ data: Data, toHost host: String, port: UInt16) throws {
         var connection = mustGetConnection(forHost: host, port: port)
+        let hostPort = HostPortKey(host: host, port: port)
         if connection.stateUpdateHandler == nil {
-            connection = setupStateUpdateHandler(for: connection, withHostPort: HostPortKey(host: host, port: port))
+            connection = setupStateUpdateHandler(for: connection, withHostPort: hostPort)
         }
         if connection.state == .setup {
             connection.start(queue: DispatchQueue.global(qos: .utility))
@@ -143,7 +144,16 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
             if error != nil {
                 self.transportLayerDelegate?.transportLayerObject(self, didFailWithError: error! as NSError)
             }
-            self.startReads(from: connection, withHostPort: HostPortKey(host: host, port: port))
+            connection.receiveMessage{ [weak self] data, context, complete, error in
+                guard let self = self else { return }
+                if error != nil {
+                    self.transportLayerDelegate.transportLayerObject(self, didFailWithError: error! as NSError)
+                    return
+                }
+                if let data = data {
+                    self.transportLayerDelegate.transportLayerObject(self, didReceiveData: data, fromHost: hostPort.host, port: hostPort.port)
+                }
+            }
         })
     }
     
@@ -158,24 +168,23 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
         listener = try NWListener(using: .udp, on: 5683)
         listener?.newConnectionHandler = { [weak self] newConnection in
             guard let self = self else { return }
+            var connection: NWConnection!
+            var hostPort: HostPortKey!
             switch newConnection.endpoint {
             case .hostPort(host: let host, port: let port):
                 let port = port.rawValue
                 switch host {
                 case .name(let name, _):
-                    let hostPort = HostPortKey(host: name, port: port)
-                    let newConnection = self.setupStateUpdateHandler(for: newConnection, withHostPort: hostPort)
-                    self.connections[hostPort] = newConnection
+                    hostPort = HostPortKey(host: name, port: port)
+                    connection = self.setupStateUpdateHandler(for: newConnection, withHostPort: hostPort)
                 case .ipv4(let ip4):
                     guard let ip = String(data: ip4.rawValue, encoding: .utf8) else { return }
-                    let hostPort = HostPortKey(host: ip, port: port)
-                    let newConnection = self.setupStateUpdateHandler(for: newConnection, withHostPort: hostPort)
-                    self.connections[hostPort] = newConnection
+                    hostPort = HostPortKey(host: ip, port: port)
+                    connection = self.setupStateUpdateHandler(for: newConnection, withHostPort: hostPort)
                 case .ipv6(let ip6):
                     guard let ip = String(data: ip6.rawValue, encoding: .utf8) else { return }
-                    let hostPort = HostPortKey(host: ip, port: port)
-                    let newConnection = self.setupStateUpdateHandler(for: newConnection, withHostPort: hostPort)
-                    self.connections[hostPort] = newConnection
+                    hostPort = HostPortKey(host: ip, port: port)
+                    connection = self.setupStateUpdateHandler(for: newConnection, withHostPort: hostPort)
                 @unknown default:
                     return
                 }
@@ -186,8 +195,9 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
             @unknown default:
                 return
             }
-            newConnection.start(queue: DispatchQueue.global(qos: .utility))
-
+            connection.start(queue: DispatchQueue.global(qos: .utility))
+            self.startReads(from: newConnection, withHostPort: hostPort)
+            self.connections[hostPort] = connection
         }
         listener?.start(queue: DispatchQueue.global(qos: .utility))
     }
