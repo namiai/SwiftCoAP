@@ -192,7 +192,7 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
 public enum SCType: Int {
     case confirmable, nonConfirmable, acknowledgement, reset
     
-    func shortString() -> String {
+    public func shortString() -> String {
         switch self {
         case .confirmable:
             return "CON"
@@ -205,7 +205,7 @@ public enum SCType: Int {
         }
     }
     
-    func longString() -> String {
+    public func longString() -> String {
         switch self {
         case .confirmable:
             return "Confirmable"
@@ -218,7 +218,7 @@ public enum SCType: Int {
         }
     }
     
-    static func fromShortString(_ string: String) -> SCType? {
+    public static func fromShortString(_ string: String) -> SCType? {
         switch string.uppercased() {
         case "CON":
             return .confirmable
@@ -261,11 +261,11 @@ public enum SCOption: Int {
     
     static let allValues = [ifMatch, uriHost, etag, ifNoneMatch, observe, uriPort, locationPath, uriPath, contentFormat, maxAge, uriQuery, accept, locationQuery, block2, block1, size2, proxyUri, proxyScheme, size1]
     
-    enum Format: Int {
+    public enum Format: Int {
         case empty, opaque, uInt, string
     }
     
-    func toString() -> String {
+    public func toString() -> String {
         switch self {
         case .ifMatch:
             return "If_Match"
@@ -308,31 +308,31 @@ public enum SCOption: Int {
         }
     }
     
-    static func isNumberCritical(_ optionNo: Int) -> Bool {
+    public static func isNumberCritical(_ optionNo: Int) -> Bool {
         return optionNo % 2 == 1
     }
     
-    func isCritical() -> Bool {
+    public func isCritical() -> Bool {
         return SCOption.isNumberCritical(self.rawValue)
     }
     
-    static func isNumberUnsafe(_ optionNo: Int) -> Bool {
+    public static func isNumberUnsafe(_ optionNo: Int) -> Bool {
         return optionNo & 0b10 == 0b10
     }
     
-    func isUnsafe() -> Bool {
+    public func isUnsafe() -> Bool {
         return SCOption.isNumberUnsafe(self.rawValue)
     }
     
-    static func isNumberNoCacheKey(_ optionNo: Int) -> Bool {
+    public static func isNumberNoCacheKey(_ optionNo: Int) -> Bool {
         return optionNo & 0b11110 == 0b11100
     }
     
-    func isNoCacheKey() -> Bool {
+    public func isNoCacheKey() -> Bool {
         return SCOption.isNumberNoCacheKey(self.rawValue)
     }
     
-    static func isNumberRepeatable(_ optionNo: Int) -> Bool {
+    public static func isNumberRepeatable(_ optionNo: Int) -> Bool {
         switch optionNo {
         case SCOption.ifMatch.rawValue, SCOption.etag.rawValue, SCOption.locationPath.rawValue, SCOption.uriPath.rawValue, SCOption.uriQuery.rawValue, SCOption.locationQuery.rawValue:
             return true
@@ -341,11 +341,11 @@ public enum SCOption: Int {
         }
     }
     
-    func isRepeatable() -> Bool {
+    public func isRepeatable() -> Bool {
         return SCOption.isNumberRepeatable(self.rawValue)
     }
     
-    func format() -> Format {
+    public func format() -> Format {
         switch self {
         case .ifNoneMatch:
             return .empty
@@ -358,11 +358,11 @@ public enum SCOption: Int {
         }
     }
     
-    func dataForValueString(_ valueString: String) -> Data? {
+    public func dataForValueString(_ valueString: String) -> Data? {
         return SCOption.dataForOptionValueString(valueString, format: format())
     }
     
-    static func dataForOptionValueString(_ valueString: String, format: Format) -> Data? {
+    public static func dataForOptionValueString(_ valueString: String, format: Format) -> Data? {
         switch format {
         case .empty:
             return nil
@@ -379,11 +379,11 @@ public enum SCOption: Int {
         }
     }
     
-    func displayStringForData(_ data: Data?) -> String {
+    public func displayStringForData(_ data: Data?) -> String {
         return SCOption.displayStringForFormat(format(), data: data)
     }
     
-    static func displayStringForFormat(_ format: Format, data: Data?) -> String {
+    public static func displayStringForFormat(_ format: Format, data: Data?) -> String {
         switch format {
         case .empty:
             return "< Empty >"
@@ -440,11 +440,11 @@ public enum SCCodeSample: Int {
     case gatewayTimeout = 164
     case proxyingNotSupported = 165
     
-    func codeValue() -> SCCodeValue! {
+    public func codeValue() -> SCCodeValue! {
         return SCCodeValue.fromCodeSample(self)
     }
     
-    func toString() -> String {
+    public func toString() -> String {
         switch self {
         case .empty:
             return "Empty"
@@ -505,7 +505,7 @@ public enum SCCodeSample: Int {
         }
     }
     
-    static func stringFromCodeValue(_ codeValue: SCCodeValue) -> String? {
+    public static func stringFromCodeValue(_ codeValue: SCCodeValue) -> String? {
         return codeValue.toCodeSample()?.toString()
     }
 }
@@ -523,7 +523,7 @@ public enum SCContentFormat: UInt {
     case json = 50
     case cbor = 60
     
-    func needsStringUTF8Conversion() -> Bool {
+    public func needsStringUTF8Conversion() -> Bool {
         switch self {
         case .octetStream, .exi, .cbor:
             return false
@@ -532,7 +532,7 @@ public enum SCContentFormat: UInt {
         }
     }
     
-    func toString() -> String {
+    public func toString() -> String {
         switch self {
         case .plain:
             return "Plain"
@@ -575,23 +575,23 @@ public struct SCCodeValue: Equatable {
         self.detailValue = detailValue
     }
     
-    func toRawValue() -> UInt8 {
+    public func toRawValue() -> UInt8 {
         return classValue << 5 + detailValue
     }
     
-    func toCodeSample() -> SCCodeSample? {
+    public func toCodeSample() -> SCCodeSample? {
         return SCCodeSample(rawValue: Int(toRawValue()))
     }
     
-    static func fromCodeSample(_ code: SCCodeSample) -> SCCodeValue {
+    public static func fromCodeSample(_ code: SCCodeSample) -> SCCodeValue {
         return SCCodeValue(rawValue: UInt8(code.rawValue))
     }
     
-    func toString() -> String {
+    public func toString() -> String {
         return String(format: "%i.%02d", classValue, detailValue)
     }
     
-    func requestString() -> String? {
+    public func requestString() -> String? {
         switch self {
         case SCCodeValue(classValue: 0, detailValue: 01)!:
             return "GET"
@@ -616,7 +616,7 @@ public func ==(lhs: SCCodeValue, rhs: SCCodeValue) -> Bool {
 //MARK: UInt Extension
 
 extension UInt {
-    func toByteArray() -> [UInt8] {
+    public func toByteArray() -> [UInt8] {
         let byteLength = UInt(ceil(log2(Double(self + 1)) / 8))
         var byteArray = [UInt8]()
         for i: UInt in 0 ..< byteLength {
@@ -625,7 +625,7 @@ extension UInt {
         return byteArray
     }
     
-    static func fromData(_ data: Data) -> UInt {
+    public static func fromData(_ data: Data) -> UInt {
         var valueBytes = [UInt8](repeating: 0, count: data.count)
         (data as NSData).getBytes(&valueBytes, length: data.count)
         
@@ -693,9 +693,9 @@ public enum SCAllowedRoute: UInt {
 public class SCResourceModel: NSObject {
     let name: String // Name of the resource
     let allowedRoutes: UInt // Bitmask of allowed routes (see SCAllowedRoutes enum)
-    var maxAgeValue: UInt! // If not nil, every response will contain the provided MaxAge value
+    public var maxAgeValue: UInt! // If not nil, every response will contain the provided MaxAge value
     fileprivate(set) var etag: Data! // If not nil, every response to a GET request will contain the provided eTag. The etag is generated automatically whenever you update the dataRepresentation of the resource
-    var dataRepresentation: Data! {
+    public var dataRepresentation: Data! {
         didSet {
             if var hashInt = dataRepresentation?.hashValue {
                 etag = Data(bytes: &hashInt, count: MemoryLayout<Int>.size)
@@ -705,7 +705,7 @@ public class SCResourceModel: NSObject {
             }
         }
     }// The current data representation of the resource. Needs to stay up to date
-    var observable = false // If true, a response will contain the Observe option, and endpoints will be able to register as observers in SCServer. Call updateRegisteredObserversForResource(self), anytime your dataRepresentation changes.
+    public var observable = false // If true, a response will contain the Observe option, and endpoints will be able to register as observers in SCServer. Call updateRegisteredObserversForResource(self), anytime your dataRepresentation changes.
     
     //Desigated initializer
     public init(name: String, allowedRoutes: UInt) {
@@ -720,14 +720,14 @@ public class SCResourceModel: NSObject {
     
     
     //This method lets you decide whether the current request shall be processed asynchronously, i.e. if true will be returned, an empty ACK will be sent, and you can provide the actual response by calling the servers "didCompleteAsynchronousRequestForOriginalMessage(...)". Note: "dataForGet", "dataForPost", etc. will not be called additionally if you return true.
-    func willHandleDataAsynchronouslyForRoute(_ route: SCAllowedRoute, queryDictionary: [String : String], options: [Int : [Data]], originalMessage: SCMessage) -> Bool { return false }
+    public func willHandleDataAsynchronouslyForRoute(_ route: SCAllowedRoute, queryDictionary: [String : String], options: [Int : [Data]], originalMessage: SCMessage) -> Bool { return false }
     
     //The following methods require data for the given routes GET, POST, PUT, DELETE and must be overriden if needed. If you return nil, the server will respond with a "Method not allowed" error code (Make sure that you have set the allowed routes in the "allowedRoutes" bitmask property).
     //You have to return a tuple with a statuscode, optional payload, optional content format for your provided payload and (in case of POST and PUT) an optional locationURI.
-    func dataForGet(queryDictionary: [String : String], options: [Int : [Data]]) -> (statusCode: SCCodeValue, payloadData: Data?, contentFormat: SCContentFormat?)? { return nil }
-    func dataForPost(queryDictionary: [String : String], options: [Int : [Data]], requestData: Data?) -> (statusCode: SCCodeValue, payloadData: Data?, contentFormat: SCContentFormat?, locationUri: String?)? { return nil }
-    func dataForPut(queryDictionary: [String : String], options: [Int : [Data]], requestData: Data?) -> (statusCode: SCCodeValue, payloadData: Data?, contentFormat: SCContentFormat?, locationUri: String?)? { return nil }
-    func dataForDelete(queryDictionary: [String : String], options: [Int : [Data]]) -> (statusCode: SCCodeValue, payloadData: Data?, contentFormat: SCContentFormat?)? { return nil }
+    public func dataForGet(queryDictionary: [String : String], options: [Int : [Data]]) -> (statusCode: SCCodeValue, payloadData: Data?, contentFormat: SCContentFormat?)? { return nil }
+    public func dataForPost(queryDictionary: [String : String], options: [Int : [Data]], requestData: Data?) -> (statusCode: SCCodeValue, payloadData: Data?, contentFormat: SCContentFormat?, locationUri: String?)? { return nil }
+    public func dataForPut(queryDictionary: [String : String], options: [Int : [Data]], requestData: Data?) -> (statusCode: SCCodeValue, payloadData: Data?, contentFormat: SCContentFormat?, locationUri: String?)? { return nil }
+    public func dataForDelete(queryDictionary: [String : String], options: [Int : [Data]]) -> (statusCode: SCCodeValue, payloadData: Data?, contentFormat: SCContentFormat?)? { return nil }
 }
 
 //MARK:
@@ -756,7 +756,7 @@ public class SCMessage: NSObject {
     public var code: SCCodeValue = SCCodeValue(classValue: 0, detailValue: 0)! //Code value is Empty by default
     public var type: SCType = .confirmable //Type is CON by default
     public var payload: Data? //Add a payload (optional)
-    lazy var options = [Int: [Data]]() //CoAP-Options. It is recommend to use the addOption(..) method to add a new option.
+    public lazy var options = [Int: [Data]]() //CoAP-Options. It is recommend to use the addOption(..) method to add a new option.
     
     //The following properties are modified by SCClient/SCServer. Modification has no effect and is therefore not recommended
     public var blockBody: Data? //Helper for Block1 tranmission. Used by SCClient, modification has no effect
