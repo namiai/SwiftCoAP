@@ -65,7 +65,7 @@ public final class SCCoAPUDPTransportLayer: NSObject {
     var port: UInt16
     var host: String
 
-    public init(host: String = "", port: UInt16 = 5683) {
+    public init(host: String = "localhost", port: UInt16 = 5683) {
         self.host = host
         self.port = port
     }
