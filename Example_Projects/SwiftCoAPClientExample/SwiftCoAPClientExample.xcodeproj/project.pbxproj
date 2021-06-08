@@ -149,6 +149,8 @@
 			dependencies = (
 			);
 			name = SwiftCoAPClientExample;
+			packageProductDependencies = (
+			);
 			productName = SwiftCoAPClientExample;
 			productReference = 934E12021B1F858100441526 /* SwiftCoAPClientExample.app */;
 			productType = "com.apple.product-type.application";
@@ -197,10 +199,13 @@
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				English,
 				en,
 				Base,
 			);
 			mainGroup = 934E11F91B1F858100441526;
+			packageReferences = (
+			);
 			productRefGroup = 934E12031B1F858100441526 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
