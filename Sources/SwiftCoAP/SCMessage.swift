@@ -92,7 +92,7 @@ public final class SCCoAPUDPTransportLayer: NSObject {
             case .ready:
                 os_log("Connection entered READY state", log: .default, type: .info)
                 guard let self = self else { return }
-                self.startReads(from: connection, withHostPort: hostPort)
+//                self.startReads(from: connection, withHostPort: hostPort)
             case .cancelled:
                 os_log("Connection entered is CANCELLED", log: .default, type: .info)
             @unknown default:
@@ -143,6 +143,7 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
             if error != nil {
                 self.transportLayerDelegate?.transportLayerObject(self, didFailWithError: error! as NSError)
             }
+            self.startReads(from: connection, withHostPort: HostPortKey(host: host, port: port))
         })
     }
     
