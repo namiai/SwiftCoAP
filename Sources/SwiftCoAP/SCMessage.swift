@@ -65,7 +65,7 @@ public final class SCCoAPUDPTransportLayer: NSObject {
     var port: UInt16
     var host: String
 
-    public init(host: String = "localhost", port: UInt16 = 5683) {
+    public init(host: String = "0.0.0.0", port: UInt16 = 5683) {
         self.host = host
         self.port = port
     }
@@ -103,6 +103,7 @@ public final class SCCoAPUDPTransportLayer: NSObject {
     }
 
     private func mustGetConnection(forHost host: String, port: UInt16) -> NWConnection {
+        os_log("Getting connection object", log: .default, type: .info, host, port)
         let connectionKey = HostPortKey(host: host, port: port)
         if let connection = connections[connectionKey], connection.state != .cancelled {
             return connection
