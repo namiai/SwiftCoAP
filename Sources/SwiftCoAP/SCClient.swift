@@ -81,11 +81,11 @@ public class SCClient: NSObject {
     fileprivate var currentTransmitWait = 0.0
     fileprivate var recentNotificationInfo: (Date, UInt)!
     lazy fileprivate var cachedMessagePairs = [SCMessage : SCMessage]()
-    
+
     
     //MARK: Internal Methods (allowed to use)
     
-    init(delegate: SCClientDelegate?, transportLayerObject: SCCoAPTransportLayerProtocol = SCCoAPUDPTransportLayer()) {
+    public init(delegate: SCClientDelegate?, transportLayerObject: SCCoAPTransportLayerProtocol = SCCoAPUDPTransportLayer()) {
         self.delegate = delegate
         super.init()
         self.transportLayerObject = transportLayerObject

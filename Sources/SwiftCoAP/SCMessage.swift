@@ -65,7 +65,7 @@ public final class SCCoAPUDPTransportLayer: NSObject {
     var port: UInt16
     var host: String
 
-    init(host: String = "", port: UInt16 = 5683) {
+    public init(host: String = "", port: UInt16 = 5683) {
         self.host = host
         self.port = port
     }
@@ -560,7 +560,7 @@ public struct SCCodeValue: Equatable {
     let classValue: UInt8
     let detailValue: UInt8
     
-    init(rawValue: UInt8) {
+    public init(rawValue: UInt8) {
         let firstBits: UInt8 = rawValue >> 5
         let lastBits: UInt8 = rawValue & 0b00011111
         self.classValue = firstBits
@@ -568,7 +568,7 @@ public struct SCCodeValue: Equatable {
     }
     
     //classValue must not be larger than 7; detailValue must not be larger than 31
-    init?(classValue: UInt8, detailValue: UInt8) {
+    public init?(classValue: UInt8, detailValue: UInt8) {
         if classValue > 0b111 || detailValue > 0b11111 { return nil }
         
         self.classValue = classValue
@@ -671,7 +671,7 @@ public enum SCAllowedRoute: UInt {
     case put = 0b100
     case delete = 0b1000
     
-    init?(codeValue: SCCodeValue) {
+    public init?(codeValue: SCCodeValue) {
         switch codeValue {
         case SCCodeValue(classValue: 0, detailValue: 01)!:
             self = .get
@@ -708,7 +708,7 @@ public class SCResourceModel: NSObject {
     var observable = false // If true, a response will contain the Observe option, and endpoints will be able to register as observers in SCServer. Call updateRegisteredObserversForResource(self), anytime your dataRepresentation changes.
     
     //Desigated initializer
-    init(name: String, allowedRoutes: UInt) {
+    public init(name: String, allowedRoutes: UInt) {
         self.name = name
         self.allowedRoutes = allowedRoutes
     }
@@ -771,7 +771,7 @@ public class SCMessage: NSObject {
     
     //MARK: Internal Methods (allowed to use)
     
-    convenience init(code: SCCodeValue, type: SCType, payload: Data?) {
+    public convenience init(code: SCCodeValue, type: SCType, payload: Data?) {
         self.init()
         self.code = code
         self.type = type

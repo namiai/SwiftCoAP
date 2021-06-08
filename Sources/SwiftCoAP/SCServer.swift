@@ -61,7 +61,7 @@ public class SCServer: NSObject {
             get { return hostname.hashValue &+ port.hashValue }
         }
         
-        init(hostname: String, port: UInt16) {
+        public init(hostname: String, port: UInt16) {
             self.hostname = hostname
             self.port = port
         }
@@ -97,7 +97,7 @@ public class SCServer: NSObject {
     
     //Initializer (failable): Starts server on initialization.
     
-    init?(delegate: SCServerDelegate?, transportLayerObject: SCCoAPTransportLayerProtocol = SCCoAPUDPTransportLayer(port: 5683)) {
+    public init?(delegate: SCServerDelegate?, transportLayerObject: SCCoAPTransportLayerProtocol = SCCoAPUDPTransportLayer(port: 5683)) {
         self.delegate = delegate
         super.init()
         self.transportLayerObject = transportLayerObject
