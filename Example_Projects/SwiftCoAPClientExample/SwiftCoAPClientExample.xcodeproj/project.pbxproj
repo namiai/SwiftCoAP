@@ -13,9 +13,6 @@
 		934E120F1B1F858100441526 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 934E120E1B1F858100441526 /* Images.xcassets */; };
 		934E12121B1F858100441526 /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = 934E12101B1F858100441526 /* LaunchScreen.xib */; };
 		934E121E1B1F858100441526 /* SwiftCoAPClientExampleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 934E121D1B1F858100441526 /* SwiftCoAPClientExampleTests.swift */; };
-		934E122D1B1F865100441526 /* GCDAsyncUdpSocket.m in Sources */ = {isa = PBXBuildFile; fileRef = 934E122A1B1F865100441526 /* GCDAsyncUdpSocket.m */; };
-		934E122E1B1F865100441526 /* SCClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 934E122B1B1F865100441526 /* SCClient.swift */; };
-		934E122F1B1F865100441526 /* SCMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 934E122C1B1F865100441526 /* SCMessage.swift */; };
 		934E12311B1F8A2800441526 /* ExampleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 934E12301B1F8A2800441526 /* ExampleViewController.swift */; };
 /* End PBXBuildFile section */
 
@@ -39,11 +36,6 @@
 		934E12171B1F858100441526 /* SwiftCoAPClientExampleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SwiftCoAPClientExampleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		934E121C1B1F858100441526 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		934E121D1B1F858100441526 /* SwiftCoAPClientExampleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftCoAPClientExampleTests.swift; sourceTree = "<group>"; };
-		934E12281B1F865000441526 /* SwiftCoAPClientExample-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "SwiftCoAPClientExample-Bridging-Header.h"; sourceTree = "<group>"; };
-		934E12291B1F865100441526 /* GCDAsyncUdpSocket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GCDAsyncUdpSocket.h; sourceTree = "<group>"; };
-		934E122A1B1F865100441526 /* GCDAsyncUdpSocket.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GCDAsyncUdpSocket.m; sourceTree = "<group>"; };
-		934E122B1B1F865100441526 /* SCClient.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SCClient.swift; sourceTree = "<group>"; };
-		934E122C1B1F865100441526 /* SCMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SCMessage.swift; sourceTree = "<group>"; };
 		934E12301B1F8A2800441526 /* ExampleViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ExampleViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -87,7 +79,6 @@
 		934E12041B1F858100441526 /* SwiftCoAPClientExample */ = {
 			isa = PBXGroup;
 			children = (
-				934E12271B1F862600441526 /* SwiftCoAP Library */,
 				934E12071B1F858100441526 /* AppDelegate.swift */,
 				934E12301B1F8A2800441526 /* ExampleViewController.swift */,
 				934E120B1B1F858100441526 /* Main.storyboard */,
@@ -121,18 +112,6 @@
 				934E121C1B1F858100441526 /* Info.plist */,
 			);
 			name = "Supporting Files";
-			sourceTree = "<group>";
-		};
-		934E12271B1F862600441526 /* SwiftCoAP Library */ = {
-			isa = PBXGroup;
-			children = (
-				934E12291B1F865100441526 /* GCDAsyncUdpSocket.h */,
-				934E122A1B1F865100441526 /* GCDAsyncUdpSocket.m */,
-				934E122B1B1F865100441526 /* SCClient.swift */,
-				934E122C1B1F865100441526 /* SCMessage.swift */,
-				934E12281B1F865000441526 /* SwiftCoAPClientExample-Bridging-Header.h */,
-			);
-			name = "SwiftCoAP Library";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -245,9 +224,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				934E122D1B1F865100441526 /* GCDAsyncUdpSocket.m in Sources */,
-				934E122F1B1F865100441526 /* SCMessage.swift in Sources */,
-				934E122E1B1F865100441526 /* SCClient.swift in Sources */,
 				934E12081B1F858100441526 /* AppDelegate.swift in Sources */,
 				934E12311B1F8A2800441526 /* ExampleViewController.swift in Sources */,
 			);

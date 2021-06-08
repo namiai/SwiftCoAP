@@ -13,9 +13,6 @@
 		9316D7A31B2AE54400B0B70D /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9316D7A21B2AE54400B0B70D /* Images.xcassets */; };
 		9316D7A61B2AE54400B0B70D /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = 9316D7A41B2AE54400B0B70D /* LaunchScreen.xib */; };
 		9316D7B21B2AE54400B0B70D /* SwiftCoAPServerExampleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9316D7B11B2AE54400B0B70D /* SwiftCoAPServerExampleTests.swift */; };
-		9316D7C11B2AE89600B0B70D /* GCDAsyncUdpSocket.m in Sources */ = {isa = PBXBuildFile; fileRef = 9316D7BE1B2AE89600B0B70D /* GCDAsyncUdpSocket.m */; };
-		9316D7C21B2AE89600B0B70D /* SCMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9316D7BF1B2AE89600B0B70D /* SCMessage.swift */; };
-		9316D7C31B2AE89600B0B70D /* SCServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9316D7C01B2AE89600B0B70D /* SCServer.swift */; };
 		9316D7C51B2AE8C600B0B70D /* ExampleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9316D7C41B2AE8C600B0B70D /* ExampleViewController.swift */; };
 		9316D7CA1B2C40C000B0B70D /* DefaultTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9316D7C91B2C40C000B0B70D /* DefaultTableViewCell.swift */; };
 		936CD06E1B3963580041837F /* TimeResourceModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 936CD06D1B3963580041837F /* TimeResourceModel.swift */; };
@@ -43,11 +40,6 @@
 		9316D7AB1B2AE54400B0B70D /* SwiftCoAPServerExampleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SwiftCoAPServerExampleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9316D7B01B2AE54400B0B70D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		9316D7B11B2AE54400B0B70D /* SwiftCoAPServerExampleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftCoAPServerExampleTests.swift; sourceTree = "<group>"; };
-		9316D7BC1B2AE89500B0B70D /* SwiftCoAPServerExample-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "SwiftCoAPServerExample-Bridging-Header.h"; sourceTree = "<group>"; };
-		9316D7BD1B2AE89600B0B70D /* GCDAsyncUdpSocket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GCDAsyncUdpSocket.h; sourceTree = "<group>"; };
-		9316D7BE1B2AE89600B0B70D /* GCDAsyncUdpSocket.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GCDAsyncUdpSocket.m; sourceTree = "<group>"; };
-		9316D7BF1B2AE89600B0B70D /* SCMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SCMessage.swift; sourceTree = "<group>"; };
-		9316D7C01B2AE89600B0B70D /* SCServer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SCServer.swift; sourceTree = "<group>"; };
 		9316D7C41B2AE8C600B0B70D /* ExampleViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ExampleViewController.swift; sourceTree = "<group>"; };
 		9316D7C91B2C40C000B0B70D /* DefaultTableViewCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DefaultTableViewCell.swift; sourceTree = "<group>"; };
 		936CD06D1B3963580041837F /* TimeResourceModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TimeResourceModel.swift; sourceTree = "<group>"; };
@@ -95,7 +87,6 @@
 		9316D7981B2AE54400B0B70D /* SwiftCoAPServerExample */ = {
 			isa = PBXGroup;
 			children = (
-				9316D7BB1B2AE59300B0B70D /* SwiftCoAPLibrary */,
 				9316D79B1B2AE54400B0B70D /* AppDelegate.swift */,
 				9316D7C41B2AE8C600B0B70D /* ExampleViewController.swift */,
 				9316D7C91B2C40C000B0B70D /* DefaultTableViewCell.swift */,
@@ -131,18 +122,6 @@
 				9316D7B01B2AE54400B0B70D /* Info.plist */,
 			);
 			name = "Supporting Files";
-			sourceTree = "<group>";
-		};
-		9316D7BB1B2AE59300B0B70D /* SwiftCoAPLibrary */ = {
-			isa = PBXGroup;
-			children = (
-				9316D7BD1B2AE89600B0B70D /* GCDAsyncUdpSocket.h */,
-				9316D7BE1B2AE89600B0B70D /* GCDAsyncUdpSocket.m */,
-				9316D7BF1B2AE89600B0B70D /* SCMessage.swift */,
-				9316D7C01B2AE89600B0B70D /* SCServer.swift */,
-				9316D7BC1B2AE89500B0B70D /* SwiftCoAPServerExample-Bridging-Header.h */,
-			);
-			name = SwiftCoAPLibrary;
 			sourceTree = "<group>";
 		};
 		9316D7C61B2AE8E600B0B70D /* CoAPServer Resource Models */ = {
@@ -265,11 +244,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9316D7C31B2AE89600B0B70D /* SCServer.swift in Sources */,
 				936CD0701B3963A40041837F /* SeparateResourceModel.swift in Sources */,
 				936CD06E1B3963580041837F /* TimeResourceModel.swift in Sources */,
-				9316D7C21B2AE89600B0B70D /* SCMessage.swift in Sources */,
-				9316D7C11B2AE89600B0B70D /* GCDAsyncUdpSocket.m in Sources */,
 				9316D79C1B2AE54400B0B70D /* AppDelegate.swift in Sources */,
 				9316D7C51B2AE8C600B0B70D /* ExampleViewController.swift in Sources */,
 				9316D7CA1B2C40C000B0B70D /* DefaultTableViewCell.swift in Sources */,
