@@ -135,6 +135,9 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
         if connection.stateUpdateHandler == nil {
             connection = setupStateUpdateHandler(for: connection, withHostPort: HostPortKey(host: host, port: port))
         }
+        if connection.state == .setup {
+            connection.start(queue: DispatchQueue.global(qos: .utility))
+        }
         connection.send(content: data, completion: .contentProcessed{ [weak self] error in
             guard let self = self else { return }
             if error != nil {
