@@ -313,8 +313,8 @@ class SCClient: NSObject {
         urlRequest.url = URL(string: urlString)
         urlRequest.timeoutInterval = SCMessage.kMaxTransmitWait
         urlRequest.cachePolicy = .useProtocolCachePolicy
-        
-        NSURLConnection.sendAsynchronousRequest(urlRequest as URLRequest, queue: OperationQueue.main) { (response, data, error) -> Void in
+
+        URLSession.shared.dataTask(with: urlRequest as URLRequest) { (data, response, error) -> Void in
             if error != nil {
                 self.notifyDelegateWithErrorCode(.proxyingError)
             }

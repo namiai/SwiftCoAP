@@ -12,7 +12,7 @@ import UIKit
 //MARK:
 //MARK: SC Server Delegate Protocol implementation
 
-protocol SCServerDelegate: class {
+protocol SCServerDelegate: AnyObject {
     
     //Tells the delegate that an error occured during or before transmission (refer to the "SCServerErrorCode" Enum)
     func swiftCoapServer(_ server: SCServer, didFailWithError error: NSError)

@@ -6,7 +6,9 @@
 //  Copyright (c) 2015 Wojtek Kordylewski. All rights reserved.
 //
 
-import UIKit
+import Foundation
+import Network
+import os.log
 
 
 //MARK:
@@ -20,7 +22,7 @@ enum SCCoAPTransportLayerError: Error {
 //MARK:
 //MARK: SC CoAP Transport Layer Delegate Protocol declaration. It is implemented by SCClient to receive responses. Your custom transport layer handler must call these callbacks to notify the SCClient object.
 
-protocol SCCoAPTransportLayerDelegate: class {
+protocol SCCoAPTransportLayerDelegate: AnyObject {
     //CoAP Data Received
     func transportLayerObject(_ transportLayerObject: SCCoAPTransportLayerProtocol, didReceiveData data: Data, fromHost host: String, port: UInt16)
     
@@ -32,18 +34,23 @@ protocol SCCoAPTransportLayerDelegate: class {
 //MARK:
 //MARK: SC CoAP Transport Layer Protocol declaration
 
-protocol SCCoAPTransportLayerProtocol: class {
+protocol SCCoAPTransportLayerProtocol: AnyObject {
     //SCClient uses this property to assign itself as delegate
     var transportLayerDelegate: SCCoAPTransportLayerDelegate! { get set }
     
     //SClient calls this method when it wants to send CoAP data
     func sendCoAPData(_ data: Data, toHost host: String, port: UInt16) throws
-    
+
     //Called when the transmission is over. Clear your states (e.g. close sockets)
     func closeTransmission()
     
     //Start to listen for Messages. Prepare e.g. sockets for receiving data. This method will only be called by SCServer
     func startListening() throws
+}
+
+struct HostPortKey: Hashable {
+    var host: String
+    var port: UInt16
 }
 
 
@@ -53,45 +60,79 @@ protocol SCCoAPTransportLayerProtocol: class {
 
 final class SCCoAPUDPTransportLayer: NSObject {
     weak var transportLayerDelegate: SCCoAPTransportLayerDelegate!
-    var udpSocket: GCDAsyncUdpSocket!
-    var port: UInt16 = 0
-    fileprivate var udpSocketTag: Int = 0
-    
-    convenience init(port: UInt16) {
-        self.init()
+    var connections: [HostPortKey: NWConnection] = [:]
+    var listener: NWListener?
+    var port: UInt16
+    var host: String
+
+    init(host: String = "", port: UInt16 = 5683) {
+        self.host = host
         self.port = port
     }
     
-    fileprivate func setUpUdpSocket() -> Bool {
-        udpSocket = GCDAsyncUdpSocket(delegate: self, delegateQueue: DispatchQueue.main)
-        do {
-            try udpSocket!.bind(toPort: port)
-            try udpSocket!.beginReceiving()
-        } catch {
-            return false
+    fileprivate func setupConnection(forHost host: String, port: UInt16) {
+        let connection = mustGetConnection(forHost: host, port: port)
+        connection.stateUpdateHandler = { [weak self] newState in
+            switch newState {
+            case .failed(let error):
+                os_log("Connection FAILED", log: .default, type: .error, "\(error)")
+                self?.connections[HostPortKey(host: host, port: port)]?.cancel()
+                guard let self = self else { return }
+                self.transportLayerDelegate?.transportLayerObject(self, didFailWithError: error as NSError)
+            case .setup:
+                os_log("Connection entered SETUP state", log: .default, type: .info)
+            case .waiting(let reason):
+                os_log("Connection entered WAITING state", log: .default, type: .info, reason.debugDescription)
+            case .preparing:
+                os_log("Connection entered PREPAIRING state", log: .default, type: .info)
+            case .ready:
+                os_log("Connection entered READY state", log: .default, type: .info)
+            case .cancelled:
+                os_log("Connection entered is CANCELLED", log: .default, type: .info)
+            @unknown default:
+                os_log("Connection is in UNKNOWN state", log: .default, type: .info)
+            }
         }
-        return true
+        connection.start(queue: DispatchQueue.global(qos: .utility))
     }
+
+    private func mustGetConnection(forHost host: String, port: UInt16) -> NWConnection {
+        let connectionKey = HostPortKey(host: host, port: port)
+        if let connection = connections[connectionKey], connection.state != .cancelled {
+            return connection
+        }
+        let connection = NWConnection(host: NWEndpoint.Host(self.host), port: NWEndpoint.Port(rawValue: self.port)!, using: .udp)
+        connections[connectionKey] = connection
+        return connection
+    }
+
+
 }
 
 extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
     func sendCoAPData(_ data: Data, toHost host: String, port: UInt16) throws {
-        try startListening()
-        udpSocket.send(data, toHost: host, port: port, withTimeout: 0, tag: udpSocketTag)
-        udpSocketTag = (udpSocketTag % Int.max) + 1
+        let connection = mustGetConnection(forHost: host, port: port)
+        connection.send(content: data, completion: .contentProcessed{ [weak self] error in
+            guard let self = self else { return }
+            if error != nil {
+                self.transportLayerDelegate?.transportLayerObject(self, didFailWithError: error! as NSError)
+            }
+        })
     }
     
     func closeTransmission() {
-        udpSocket.close()
-        udpSocket = nil
+        connections.forEach{
+            $0.value.cancel()
+        }
+        connections = [:]
     }
     
     func startListening() throws {
-        if udpSocket == nil && !setUpUdpSocket() {
-            udpSocket.close()
-            udpSocket = nil
-            throw SCCoAPTransportLayerError.setupError(errorDescription: "Failed to setup UDP socket")
-        }
+        //        if connection == nil && !setUpUdpSocket() {
+        //            connection.close()
+        //            connection = nil
+        //            throw SCCoAPTransportLayerError.setupError(errorDescription: "Failed to setup UDP socket")
+        //        }
     }
 }
 
