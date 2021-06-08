@@ -86,7 +86,7 @@ public final class SCCoAPUDPTransportLayer: NSObject {
             case .setup:
                 os_log("Connection entered SETUP state", log: .default, type: .info)
             case .waiting(let reason):
-                os_log("Connection entered WAITING state", log: .default, type: .info, reason.debugDescription)
+                os_log("Connection entered WAITING state. Reason %@", log: .default, type: .info, reason.debugDescription)
             case .preparing:
                 os_log("Connection entered PREPAIRING state", log: .default, type: .info)
             case .ready:
@@ -103,7 +103,7 @@ public final class SCCoAPUDPTransportLayer: NSObject {
     }
 
     private func mustGetConnection(forHost host: String, port: UInt16) -> NWConnection {
-        os_log("Getting connection object", log: .default, type: .info, host, port)
+        os_log("Getting connection object. Host %@, port %d", log: .default, type: .info, host, port)
         let connectionKey = HostPortKey(host: host, port: port)
         if let connection = connections[connectionKey], connection.state != .cancelled {
             return connection
