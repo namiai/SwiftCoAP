@@ -75,7 +75,8 @@ public final class SCCoAPUDPTransportLayer: NSObject {
             switch newState {
             case .failed(let error):
                 os_log("Connection FAILED", log: .default, type: .error, "\(error)")
-                self?.connections[HostPortKey(host: hostPort.host, port: hostPort.port)]?.cancel()
+                self?.connections[hostPort]?.cancel()
+                self?.connections.removeValue(forKey: hostPort)
                 guard let self = self else { return }
                 self.transportLayerDelegate?.transportLayerObject(self, didFailWithError: error as NSError)
             case .setup:
@@ -90,6 +91,7 @@ public final class SCCoAPUDPTransportLayer: NSObject {
                 self.startReads(from: connection, withHostPort: hostPort)
             case .cancelled:
                 os_log("Connection entered is CANCELLED", log: .default, type: .info)
+                self?.connections.removeValue(forKey: hostPort)
             @unknown default:
                 os_log("Connection is in UNKNOWN state", log: .default, type: .info)
             }

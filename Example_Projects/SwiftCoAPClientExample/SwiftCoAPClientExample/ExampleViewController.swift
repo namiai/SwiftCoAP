@@ -89,7 +89,7 @@ extension ExampleViewController: SCClientDelegate {
         var optString = "Options:\n"
         for (key, _) in message.options {
             var optName = "Unknown"
-                
+
             if let knownOpt = SCOption(rawValue: key) {
                 optName = knownOpt.toString()
             }
@@ -102,7 +102,9 @@ extension ExampleViewController: SCClientDelegate {
     }
     
     func swiftCoapClient(_ client: SCClient, didFailWithError error: NSError) {
-        textView.text = "Failed with Error \(error.localizedDescription)" + separatorLine + separatorLine + textView.text
+        DispatchQueue.main.async {
+            self.textView.text = "Failed with Error \(error.localizedDescription)" + self.separatorLine + self.separatorLine + self.textView.text
+        }
     }
     
     func swiftCoapClient(_ client: SCClient, didSendMessage message: SCMessage, number: Int) {
