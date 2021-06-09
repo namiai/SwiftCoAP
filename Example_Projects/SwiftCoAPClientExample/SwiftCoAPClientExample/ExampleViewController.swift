@@ -96,7 +96,9 @@ extension ExampleViewController: SCClientDelegate {
 
             optString += "\(optName) (\(key))\n"
         }
-        textView.text = separatorLine + firstPartString + optString + separatorLine + textView.text
+        DispatchQueue.main.async {
+            self.textView.text = self.separatorLine + firstPartString + optString + self.separatorLine + self.textView.text
+        }
     }
     
     func swiftCoapClient(_ client: SCClient, didFailWithError error: NSError) {
@@ -104,6 +106,9 @@ extension ExampleViewController: SCClientDelegate {
     }
     
     func swiftCoapClient(_ client: SCClient, didSendMessage message: SCMessage, number: Int) {
-        textView.text = "Message sent (\(number)) with type: \(message.type.shortString()) with id: \(String(describing: message.messageId))\n" + separatorLine + separatorLine + textView.text
+        DispatchQueue.main.async {
+            self.textView.text = "Message sent (\(number)) with type: \(message.type.shortString()) with id: \(String(describing: message.messageId))\n" + self.separatorLine + self.separatorLine + self.textView.text
+        }
+
     }
 }

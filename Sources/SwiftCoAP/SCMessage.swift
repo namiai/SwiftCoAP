@@ -92,7 +92,7 @@ public final class SCCoAPUDPTransportLayer: NSObject {
             case .ready:
                 os_log("Connection entered READY state", log: .default, type: .info)
                 guard let self = self else { return }
-//                self.startReads(from: connection, withHostPort: hostPort)
+                self.startReads(from: connection, withHostPort: hostPort)
             case .cancelled:
                 os_log("Connection entered is CANCELLED", log: .default, type: .info)
             @unknown default:
@@ -104,11 +104,12 @@ public final class SCCoAPUDPTransportLayer: NSObject {
 
     private func mustGetConnection(forHost host: String, port: UInt16) -> NWConnection {
         os_log("Getting connection object. Host %@, port %d", log: .default, type: .info, host, port)
+        os_log("Now exist %d NWConnection object(s)", connections.count)
         let connectionKey = HostPortKey(host: host, port: port)
         if let connection = connections[connectionKey], connection.state != .cancelled {
             return connection
         }
-        let connection = NWConnection(host: NWEndpoint.Host(self.host), port: NWEndpoint.Port(rawValue: self.port)!, using: .udp)
+        let connection = NWConnection(host: NWEndpoint.Host(host), port: NWEndpoint.Port(rawValue: port)!, using: .udp)
         connections[connectionKey] = connection
         return connection
     }
@@ -116,6 +117,7 @@ public final class SCCoAPUDPTransportLayer: NSObject {
     private func startReads(from connection: NWConnection, withHostPort hostPort: HostPortKey) {
         while connection.state == .ready {
             connection.receiveMessage { [weak self] data, context, complete, error in
+                print(data, context, complete, error)
                 guard let self = self else { return }
                 if error != nil {
                     self.transportLayerDelegate.transportLayerObject(self, didFailWithError: error! as NSError)
