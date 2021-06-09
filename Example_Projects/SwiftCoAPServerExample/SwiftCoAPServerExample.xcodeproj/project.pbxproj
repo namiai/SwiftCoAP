@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		49B812B1266F1AF200E842E6 /* SwiftCoAP in Frameworks */ = {isa = PBXBuildFile; productRef = 49B812B0266F1AF200E842E6 /* SwiftCoAP */; };
+		49B812B7267088A900E842E6 /* SwiftCoAP in Frameworks */ = {isa = PBXBuildFile; productRef = 49B812B6267088A900E842E6 /* SwiftCoAP */; };
 		9316D79C1B2AE54400B0B70D /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9316D79B1B2AE54400B0B70D /* AppDelegate.swift */; };
 		9316D7A11B2AE54400B0B70D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 9316D79F1B2AE54400B0B70D /* Main.storyboard */; };
 		9316D7A31B2AE54400B0B70D /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9316D7A21B2AE54400B0B70D /* Images.xcassets */; };
@@ -52,7 +52,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				49B812B1266F1AF200E842E6 /* SwiftCoAP in Frameworks */,
+				49B812B7267088A900E842E6 /* SwiftCoAP in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -151,7 +151,7 @@
 			);
 			name = SwiftCoAPServerExample;
 			packageProductDependencies = (
-				49B812B0266F1AF200E842E6 /* SwiftCoAP */,
+				49B812B6267088A900E842E6 /* SwiftCoAP */,
 			);
 			productName = SwiftCoAPServerExample;
 			productReference = 9316D7961B2AE54400B0B70D /* SwiftCoAPServerExample.app */;
@@ -207,7 +207,7 @@
 			);
 			mainGroup = 9316D78D1B2AE54400B0B70D;
 			packageReferences = (
-				49B812AF266F1AF200E842E6 /* XCRemoteSwiftPackageReference "SwiftCoAP" */,
+				49B812B5267088A900E842E6 /* XCRemoteSwiftPackageReference "SwiftCoAP" */,
 			);
 			productRefGroup = 9316D7971B2AE54400B0B70D /* Products */;
 			projectDirPath = "";
@@ -519,7 +519,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		49B812AF266F1AF200E842E6 /* XCRemoteSwiftPackageReference "SwiftCoAP" */ = {
+		49B812B5267088A900E842E6 /* XCRemoteSwiftPackageReference "SwiftCoAP" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/namiai/SwiftCoAP";
 			requirement = {
@@ -530,9 +530,9 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		49B812B0266F1AF200E842E6 /* SwiftCoAP */ = {
+		49B812B6267088A900E842E6 /* SwiftCoAP */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 49B812AF266F1AF200E842E6 /* XCRemoteSwiftPackageReference "SwiftCoAP" */;
+			package = 49B812B5267088A900E842E6 /* XCRemoteSwiftPackageReference "SwiftCoAP" */;
 			productName = SwiftCoAP;
 		};
 /* End XCSwiftPackageProductDependency section */
