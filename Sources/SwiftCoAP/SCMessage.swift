@@ -69,11 +69,6 @@ public final class SCCoAPUDPTransportLayer: NSObject {
         self.host = host
         self.port = port
     }
-    
-    //    fileprivate func setupConnection(forHost host: String, port: UInt16) {
-    //        let connection = setupStateUpdateHandler(for: mustGetConnection(forHost: host, port: port), withHostPort: HostPortKey(host: host, port: port))
-    //        connection.start(queue: DispatchQueue.global(qos: .utility))
-    //    }
 
     private func setupStateUpdateHandler(for connection: NWConnection, withHostPort hostPort: HostPortKey) -> NWConnection {
         connection.stateUpdateHandler = { [weak self] newState in
@@ -149,16 +144,6 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
             guard let self = self else { return }
             if error != nil {
                 self.transportLayerDelegate?.transportLayerObject(self, didFailWithError: error! as NSError)
-            }
-            connection.receiveMessage{ [weak self] data, context, complete, error in
-                guard let self = self else { return }
-                if error != nil {
-                    self.transportLayerDelegate.transportLayerObject(self, didFailWithError: error! as NSError)
-                    return
-                }
-                if let data = data {
-                    self.transportLayerDelegate.transportLayerObject(self, didReceiveData: data, fromHost: hostPort.host, port: hostPort.port)
-                }
             }
         })
     }
