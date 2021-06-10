@@ -165,9 +165,7 @@ public class SCServer: NSObject {
                 setupReliableTransmissionOfMessage(notification, forResource: resource)
             }
         }
-        DispatchQueue.main.async {
-            self.delegate?.swiftCoapServer(self, willUpdatedObserversForResource: resource)
-        }
+        self.delegate?.swiftCoapServer(self, willUpdatedObserversForResource: resource)
     }
     
     
@@ -233,9 +231,7 @@ public class SCServer: NSObject {
         let message = userInfoDict["message"] as! SCMessage
         let resource = userInfoDict["resource"] as! SCResourceModel
         sendMessage(message)
-        DispatchQueue.main.async {
-            self.delegate?.swiftCoapServer(self, didSendSeparateResponseMessage: message, number: retransmissionCount)
-        }
+        self.delegate?.swiftCoapServer(self, didSendSeparateResponseMessage: message, number: retransmissionCount)
         
         if let hostname = message.hostName, let port = message.port {
             let wrapper = SCAddressWrapper(hostname: hostname, port: port)
@@ -281,9 +277,7 @@ public class SCServer: NSObject {
     }
     
     fileprivate func notifyDelegateWithTransportLayerErrorDescription(_ errorDescription: String) {
-        DispatchQueue.main.async {
-            self.delegate?.swiftCoapServer(self, didFailWithError: NSError(domain: SCMessage.kCoapErrorDomain, code: 0, userInfo: [NSLocalizedDescriptionKey : errorDescription]))
-        }
+        self.delegate?.swiftCoapServer(self, didFailWithError: NSError(domain: SCMessage.kCoapErrorDomain, code: 0, userInfo: [NSLocalizedDescriptionKey : errorDescription]))
     }
     
     fileprivate func removeContextForMessage(_ message: SCMessage) {
@@ -318,9 +312,7 @@ public class SCServer: NSObject {
     }
     
     fileprivate func notifyDelegateWithErrorCode(_ clientErrorCode: SCServerErrorCode) {
-        DispatchQueue.main.async {
-            self.delegate?.swiftCoapServer(self, didFailWithError: NSError(domain: SCMessage.kCoapErrorDomain, code: clientErrorCode.rawValue, userInfo: [NSLocalizedDescriptionKey : clientErrorCode.descriptionString()]))
-        }
+        self.delegate?.swiftCoapServer(self, didFailWithError: NSError(domain: SCMessage.kCoapErrorDomain, code: clientErrorCode.rawValue, userInfo: [NSLocalizedDescriptionKey : clientErrorCode.descriptionString()]))
     }
     
     fileprivate func handleBlock2ServerRequirementsForMessage(_ message: SCMessage, preferredBlockSZX: UInt?) {
@@ -540,9 +532,7 @@ public class SCServer: NSObject {
     public func respondWithErrorCode(_ responseCode: SCCodeValue, diagnosticPayload: Data?, forMessage message: SCMessage, withType type: SCType) {
         if let hostname = message.hostName, let port = message.port {
             sendMessageWithType(type, code: responseCode, payload: diagnosticPayload, messageId: message.messageId, hostname: hostname, port: port, token: message.token)
-            DispatchQueue.main.async {
-                self.delegate?.swiftCoapServer(self, didRejectRequestWithCode: message.code, forPath: message.completeUriPath(), withResponseCode: responseCode)
-            }
+            self.delegate?.swiftCoapServer(self, didRejectRequestWithCode: message.code, forPath: message.completeUriPath(), withResponseCode: responseCode)
         }
     }
 }
@@ -621,9 +611,7 @@ extension SCServer: SCCoAPTransportLayerDelegate {
                         if message.type == .confirmable {
                             sendMessageWithType(.acknowledgement, code: SCCodeValue(classValue: 0, detailValue: 00)!, payload: nil, messageId: message.messageId, hostname: host, port: port)
                         }
-                        DispatchQueue.main.async {
-                            self.delegate?.swiftCoapServer(self, didHandleRequestWithCode: message.code, forResource: resultResource, withResponseCode: SCCodeValue(classValue: 0, detailValue: 00)!)
-                        }
+                        self.delegate?.swiftCoapServer(self, didHandleRequestWithCode: message.code, forResource: resultResource, withResponseCode: SCCodeValue(classValue: 0, detailValue: 00)!)
                         return true
                     }
                     return false
@@ -638,9 +626,7 @@ extension SCServer: SCCoAPTransportLayerDelegate {
                         for etagData in etagValueArray {
                             if etagData == resultResource.etag {
                                 sendMessageWithType(resultType, code: SCCodeSample.valid.codeValue(), payload: nil, messageId: message.messageId, hostname: host, port: port, token: message.token, options: [SCOption.etag.rawValue : [etagData]])
-                                DispatchQueue.main.async {
-                                    self.delegate?.swiftCoapServer(self, didHandleRequestWithCode: message.code, forResource: resultResource, withResponseCode: SCCodeSample.valid.codeValue())
-                                }
+                                self.delegate?.swiftCoapServer(self, didHandleRequestWithCode: message.code, forResource: resultResource, withResponseCode: SCCodeSample.valid.codeValue())
                                 return
                             }
                         }
@@ -690,9 +676,7 @@ extension SCServer: SCCoAPTransportLayerDelegate {
                 
                 if let finalTuple = resultTuple, let responseMessage = createMessageForValues(finalTuple, withType: resultType, relatedMessage: message, requestedResource: resultResource) {
                     sendMessage(responseMessage)
-                    DispatchQueue.main.async {
-                        self.delegate?.swiftCoapServer(self, didHandleRequestWithCode: message.code, forResource: resultResource, withResponseCode: responseMessage.code)
-                    }
+                    self.delegate?.swiftCoapServer(self, didHandleRequestWithCode: message.code, forResource: resultResource, withResponseCode: responseMessage.code)
                 }
                 else {
                     respondWithErrorCode(SCCodeSample.methodNotAllowed.codeValue(), diagnosticPayload: "Method Not Allowed".data(using: String.Encoding.utf8), forMessage: message, withType: resultType)

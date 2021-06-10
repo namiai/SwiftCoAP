@@ -19,12 +19,12 @@ Transport layer converted from aging `GCDAsyncUdpSocket` to Apple's `Network.fra
 Getting Started
 =====
 
-###The Package:
+### The Package:
 ```swift
 .package(url: "https://github.com/namiai/SwiftCoAP.git", .branch("master"))
 ```
 
-###The Code
+### The Code
 
 This section gives you an impression on how to use the provided data structures.
 
@@ -157,6 +157,6 @@ Make sure to take a look at the examples, which show the library in action. Let 
 
 Editing the Project
 =====
-To edit the project it would be convenirnt to open `SwiftCoAP.xcworkspace` in Xcode. This way it'll open both Client and Server example implementations targets and the Package. You may also want to edit the library code separately. In such a case just open `Package.swift` with Xcode.
+To edit the project it would be convenient to open `SwiftCoAP.xcworkspace` in Xcode. This way it'll open both Client and Server example implementations targets and the Package. You may also want to edit the library code separately. In such a case just open `Package.swift` with Xcode.
 
 

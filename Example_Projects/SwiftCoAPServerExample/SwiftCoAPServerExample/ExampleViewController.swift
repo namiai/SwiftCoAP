@@ -59,7 +59,9 @@ extension ExampleViewController: SCServerDelegate {
     }
     
     func swiftCoapServer(_ server: SCServer, didHandleRequestWithCode requestCode: SCCodeValue, forResource resource: SCResourceModel, withResponseCode responseCode: SCCodeValue) {
-        tableView.reloadData()
+        DispatchQueue.main.async {
+            self.tableView.reloadData()
+        }
         print("Did Handle Request with request code: \(requestCode.toString()) for resource \(resource.name) with response code: \(responseCode.toString())")
     }
     
@@ -72,7 +74,9 @@ extension ExampleViewController: SCServerDelegate {
     }
     
     func swiftCoapServer(_ server: SCServer, willUpdatedObserversForResource resource: SCResourceModel) {
-        tableView.reloadData()
-     //   print("Attempting to Update Observers for resource \(resource.name)")
+        DispatchQueue.main.async {
+            self.tableView.reloadData()
+        }
+        //   print("Attempting to Update Observers for resource \(resource.name)")
     }
 }
