@@ -502,7 +502,7 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/namiai/SwiftCoAP";
 			requirement = {
-				branch = swift_pm;
+				branch = master;
 				kind = branch;
 			};
 		};
