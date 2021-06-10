@@ -97,7 +97,7 @@ public class SCServer: NSObject {
     
     //Initializer (failable): Starts server on initialization.
     
-    public init?(delegate: SCServerDelegate?, transportLayerObject: SCCoAPTransportLayerProtocol = SCCoAPUDPTransportLayer(port: 5683)) {
+    public init?(delegate: SCServerDelegate?, transportLayerObject: SCCoAPTransportLayerProtocol = SCCoAPUDPTransportLayer()) {
         self.delegate = delegate
         super.init()
         self.transportLayerObject = transportLayerObject

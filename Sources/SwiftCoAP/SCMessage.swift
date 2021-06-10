@@ -62,13 +62,6 @@ public final class SCCoAPUDPTransportLayer: NSObject {
     weak public var transportLayerDelegate: SCCoAPTransportLayerDelegate!
     var connections: [HostPortKey: NWConnection] = [:]
     var listener: NWListener?
-    var port: UInt16
-    var host: String
-
-    public init(host: String = "0.0.0.0", port: UInt16 = 5683) {
-        self.host = host
-        self.port = port
-    }
 
     private func setupStateUpdateHandler(for connection: NWConnection, withHostPort hostPort: HostPortKey) -> NWConnection {
         connection.stateUpdateHandler = { [weak self] newState in
@@ -100,14 +93,16 @@ public final class SCCoAPUDPTransportLayer: NSObject {
     }
 
     private func mustGetConnection(forHost host: String, port: UInt16) -> NWConnection {
-        os_log("Getting connection object. Host %@, port %d", log: .default, type: .info, host, port)
-        os_log("Now exist %d NWConnection object(s)", connections.count)
+        os_log("Currently %d NWConnection object(s) are alive", connections.count)
+        os_log("Getting connection object for HOST %@, PORT %d", log: .default, type: .info, host, port)
         let connectionKey = HostPortKey(host: host, port: port)
         if let connection = connections[connectionKey], connection.state != .cancelled {
+            os_log("Reusing existing NWConnection for HOST %@, PORT %d", log: .default, type: .info, host, port)
             return connection
         }
         let connection = NWConnection(host: NWEndpoint.Host(host), port: NWEndpoint.Port(rawValue: port)!, using: .udp)
         connections[connectionKey] = connection
+        os_log("New NWConnection created for HOST %@, PORT %d", log: .default, type: .info, host, port)
         return connection
     }
 
