@@ -62,31 +62,32 @@ public final class SCCoAPUDPTransportLayer: NSObject {
     weak public var transportLayerDelegate: SCCoAPTransportLayerDelegate!
     var connections: [HostPortKey: NWConnection] = [:]
     var listener: NWListener?
+    var networkParameters: NWParameters = .udp
 
     private func setupStateUpdateHandler(for connection: NWConnection, withHostPort hostPort: HostPortKey) -> NWConnection {
         connection.stateUpdateHandler = { [weak self] newState in
             switch newState {
             case .failed(let error):
-                os_log("Connection FAILED", log: .default, type: .error, "\(error)")
+                os_log("Connection to HOST %@, PORT %d FAILED", log: .default, type: .error, "\(error)", hostPort.host, hostPort.port)
                 self?.connections[hostPort]?.cancel()
                 self?.connections.removeValue(forKey: hostPort)
                 guard let self = self else { return }
                 self.transportLayerDelegate?.transportLayerObject(self, didFailWithError: error as NSError)
             case .setup:
-                os_log("Connection entered SETUP state", log: .default, type: .info)
+                os_log("Connection to HOST %@, PORT %d entered SETUP state", log: .default, type: .info, hostPort.host, hostPort.port)
             case .waiting(let reason):
-                os_log("Connection entered WAITING state. Reason %@", log: .default, type: .info, reason.debugDescription)
+                os_log("Connection to HOST %@, PORT %d entered WAITING state. Reason %@", log: .default, type: .info, hostPort.host, hostPort.port, reason.debugDescription)
             case .preparing:
-                os_log("Connection entered PREPAIRING state", log: .default, type: .info)
+                os_log("Connection to HOST %@, PORT %d entered PREPAIRING state", log: .default, type: .info, hostPort.host, hostPort.port)
             case .ready:
-                os_log("Connection entered READY state", log: .default, type: .info)
+                os_log("Connection to HOST %@, PORT %d entered READY state", log: .default, type: .info, hostPort.host, hostPort.port)
                 guard let self = self else { return }
                 self.startReads(from: connection, withHostPort: hostPort)
             case .cancelled:
-                os_log("Connection entered is CANCELLED", log: .default, type: .info)
+                os_log("Connection to HOST %@, PORT %d entered is CANCELLED", log: .default, type: .info, hostPort.host, hostPort.port)
                 self?.connections.removeValue(forKey: hostPort)
             @unknown default:
-                os_log("Connection is in UNKNOWN state", log: .default, type: .info)
+                os_log("Connection to HOST %@, PORT %d is in UNKNOWN state", log: .default, type: .info, hostPort.host, hostPort.port)
             }
         }
         return connection
@@ -94,15 +95,15 @@ public final class SCCoAPUDPTransportLayer: NSObject {
 
     private func mustGetConnection(forHost host: String, port: UInt16) -> NWConnection {
         os_log("Currently %d NWConnection object(s) are alive", connections.count)
-        os_log("Getting connection object for HOST %@, PORT %d", log: .default, type: .info, host, port)
+        os_log("Getting connection object for connection to HOST %@, PORT %d", log: .default, type: .info, host, port)
         let connectionKey = HostPortKey(host: host, port: port)
         if let connection = connections[connectionKey], connection.state != .cancelled {
-            os_log("Reusing existing NWConnection for HOST %@, PORT %d", log: .default, type: .info, host, port)
+            os_log("Reusing existing NWConnection to HOST %@, PORT %d", log: .default, type: .info, host, port)
             return connection
         }
-        let connection = NWConnection(host: NWEndpoint.Host(host), port: NWEndpoint.Port(rawValue: port)!, using: .udp)
+        let connection = NWConnection(host: NWEndpoint.Host(host), port: NWEndpoint.Port(rawValue: port)!, using: networkParameters)
         connections[connectionKey] = connection
-        os_log("New NWConnection created for HOST %@, PORT %d", log: .default, type: .info, host, port)
+        os_log("New NWConnection created to HOST %@, PORT %d", log: .default, type: .info, host, port)
         return connection
     }
 
@@ -128,6 +129,21 @@ public final class SCCoAPUDPTransportLayer: NSObject {
 }
 
 extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
+    /// Passing a PSK to init sets all NWConnection and NWListener objects if any created
+    /// to use DTLS with provided PSK.
+    convenience public init(psk: String) {
+        self.init()
+        networkParameters = networkParametersDTLSWith(psk: psk)
+    }
+
+    /// NWParameters to use with all NWConnection and NWListener objects if any created.
+    /// Helps to customize transport layer behaviour with non-standard connection options.
+    /// E.g. setting certificate chalange, verifiction handlers for connoctions etc.
+    convenience public init(networkParameters: NWParameters){
+        self.init()
+        self.networkParameters = networkParameters
+    }
+
     public func sendCoAPData(_ data: Data, toHost host: String, port: UInt16) throws {
         var connection = mustGetConnection(forHost: host, port: port)
         let hostPort = HostPortKey(host: host, port: port)
@@ -151,9 +167,14 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
         }
         connections = [:]
     }
-    
+
     public func startListening() throws {
-        listener = try NWListener(using: .udp, on: 5683)
+        // Comply to protocol and start listen on CoAP default port.
+        try startListening(onPort: 5683)
+    }
+    
+    public func startListening(onPort listenPort: UInt16) throws {
+        listener = try NWListener(using: networkParameters, on: NWEndpoint.Port(rawValue: listenPort)!)
         listener?.newConnectionHandler = { [weak self] newConnection in
             guard let self = self else { return }
             var connection: NWConnection!
@@ -188,6 +209,24 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
             self.connections[hostPort] = connection
         }
         listener?.start(queue: DispatchQueue.global(qos: .utility))
+    }
+
+    private func networkParametersDTLSWith(psk: String)->NWParameters{
+        NWParameters(dtls: tlsWithPSKOptions(psk: psk), udp: NWProtocolUDP.Options())
+    }
+
+    private func tlsWithPSKOptions(psk: String)->NWProtocolTLS.Options{
+        let tlsOptions = NWProtocolTLS.Options()
+        let semaphore = DispatchSemaphore(value: 0)
+        psk.data(using: .utf8)?.withUnsafeBytes{ (pointer:UnsafeRawBufferPointer) in
+            defer { semaphore.signal() }
+            let dd = DispatchData(bytes: pointer)
+            sec_protocol_options_add_pre_shared_key(tlsOptions.securityProtocolOptions, dd as __DispatchData, dd as __DispatchData)
+            // TLS_PSK_WITH_AES_128_GCM_SHA256 as in Apple's example project. 'Boring SSL' complains anyway.
+            sec_protocol_options_append_tls_ciphersuite(tlsOptions.securityProtocolOptions, tls_ciphersuite_t(rawValue: TLS_PSK_WITH_AES_128_GCM_SHA256)!)
+        }
+        semaphore.wait()
+        return tlsOptions
     }
 }
 
