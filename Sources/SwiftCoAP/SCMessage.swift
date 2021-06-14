@@ -84,7 +84,7 @@ public final class SCCoAPUDPTransportLayer: NSObject {
                 guard let self = self else { return }
                 self.startReads(from: connection, withHostPort: hostPort)
             case .cancelled:
-                os_log("Connection to HOST %@, PORT %d entered is CANCELLED", log: .default, type: .info, hostPort.host, hostPort.port)
+                os_log("Connection to HOST %@, PORT %d is CANCELLED", log: .default, type: .info, hostPort.host, hostPort.port)
                 self?.connections.removeValue(forKey: hostPort)
             @unknown default:
                 os_log("Connection to HOST %@, PORT %d is in UNKNOWN state", log: .default, type: .info, hostPort.host, hostPort.port)
@@ -138,7 +138,7 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
 
     /// NWParameters to use with all NWConnection and NWListener objects if any created.
     /// Helps to customize transport layer behaviour with non-standard connection options.
-    /// E.g. setting certificate chalange, verifiction handlers for connoctions etc.
+    /// E.g. setting certificate chalange, verifiction handlers for connections etc.
     convenience public init(networkParameters: NWParameters){
         self.init()
         self.networkParameters = networkParameters
@@ -207,6 +207,25 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
             connection.start(queue: DispatchQueue.global(qos: .utility))
             self.startReads(from: newConnection, withHostPort: hostPort)
             self.connections[hostPort] = connection
+        }
+        listener?.stateUpdateHandler = { [weak self] newState in
+            switch newState {
+            case .failed(let error):
+                os_log("Listener on PORT %d FAILED", log: .default, type: .error, "\(error)", listenPort)
+                // Restart listener as in Apple's example.
+                if error == NWError.dns(DNSServiceErrorType(kDNSServiceErr_DefunctConnection)) {
+                    self?.listener?.cancel()
+                    try? self?.startListening(onPort: listenPort)
+                } else {
+                    self?.listener?.cancel()
+                }
+            case .waiting(let reason):
+                os_log("Listener on PORT %d entered WAITING state. Reason %@", log: .default, type: .info, listenPort, reason.debugDescription)
+            default:
+                os_log("Listener on PORT %d entered %@ state", log: .default, type: .info, listenPort, (String(reflecting: newState)
+                                                                                                            .split(separator: ".")
+                                                                                                            .last ?? "unknown").uppercased() as CVarArg)
+            }
         }
         listener?.start(queue: DispatchQueue.global(qos: .utility))
     }
