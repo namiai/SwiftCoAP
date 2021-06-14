@@ -11,16 +11,14 @@ import Network
 import os.log
 
 
-//MARK:
-//MARK: SC Coap Transport Layer Error Enumeration
+//MARK: - SC Coap Transport Layer Error Enumeration
 
 public enum SCCoAPTransportLayerError: Error {
     case setupError(errorDescription: String), sendError(errorDescription: String)
 }
 
 
-//MARK:
-//MARK: SC CoAP Transport Layer Delegate Protocol declaration. It is implemented by SCClient to receive responses. Your custom transport layer handler must call these callbacks to notify the SCClient object.
+//MARK: - SC CoAP Transport Layer Delegate Protocol declaration. It is implemented by SCClient to receive responses. Your custom transport layer handler must call these callbacks to notify the SCClient object.
 
 public protocol SCCoAPTransportLayerDelegate: AnyObject {
     //CoAP Data Received
@@ -31,8 +29,7 @@ public protocol SCCoAPTransportLayerDelegate: AnyObject {
 }
 
 
-//MARK:
-//MARK: SC CoAP Transport Layer Protocol declaration
+//MARK: - SC CoAP Transport Layer Protocol declaration
 
 public protocol SCCoAPTransportLayerProtocol: AnyObject {
     //SCClient uses this property to assign itself as delegate
@@ -55,9 +52,8 @@ struct HostPortKey: Hashable {
 
 
 
-//MARK:
-//MARK: SC CoAP UDP Transport Layer: This class is the default transport layer handler, sending data via UDP with help of GCDAsyncUdpSocket. If you want to create a custom transport layer handler, you have to create a custom class and adopt the SCCoAPTransportLayerProtocol. Next you have to pass your class to the init method of SCClient: init(delegate: SCClientDelegate?, transportLayerObject: SCCoAPTransportLayerProtocol). You will than get callbacks to send CoAP data and have to inform your delegate (in this case an object of type SCClient) when you receive a response by using the callbacks from SCCoAPTransportLayerDelegate.
-
+//MARK: - SC CoAP UDP Transport Layer
+/// SC CoAP UDP Transport Layer: This class is the default transport layer handler, sending data via UDP with help of `Network.framework`. If you want to create a custom transport layer handler, you have to create a custom class and adopt the SCCoAPTransportLayerProtocol. Next you have to pass your class to the init method of SCClient: init(delegate: SCClientDelegate?, transportLayerObject: SCCoAPTransportLayerProtocol). You will than get callbacks to send CoAP data and have to inform your delegate (in this case an object of type SCClient) when you receive a response by using the callbacks from SCCoAPTransportLayerDelegate.
 public final class SCCoAPUDPTransportLayer: NSObject {
     weak public var transportLayerDelegate: SCCoAPTransportLayerDelegate!
     var connections: [HostPortKey: NWConnection] = [:]
@@ -131,6 +127,7 @@ public final class SCCoAPUDPTransportLayer: NSObject {
 extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
     /// Passing a PSK to init sets all NWConnection and NWListener objects if any created
     /// to use DTLS with provided PSK.
+    /// - Parameter psk: A Preshared Key in plain text form.
     convenience public init(psk: String) {
         self.init()
         networkParameters = networkParametersDTLSWith(psk: psk)
@@ -139,6 +136,8 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
     /// NWParameters to use with all NWConnection and NWListener objects if any created.
     /// Helps to customize transport layer behaviour with non-standard connection options.
     /// E.g. setting certificate chalange, verifiction handlers for connections etc.
+    /// - Parameter networkParameters: A `NWParameters` object holding all the custom setup
+    /// to be passed to `NWConnection` or `NWListener` if any.
     convenience public init(networkParameters: NWParameters){
         self.init()
         self.networkParameters = networkParameters
@@ -230,11 +229,11 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
         listener?.start(queue: DispatchQueue.global(qos: .utility))
     }
 
-    private func networkParametersDTLSWith(psk: String)->NWParameters{
+    private func networkParametersDTLSWith(psk: String) -> NWParameters{
         NWParameters(dtls: tlsWithPSKOptions(psk: psk), udp: NWProtocolUDP.Options())
     }
 
-    private func tlsWithPSKOptions(psk: String)->NWProtocolTLS.Options{
+    private func tlsWithPSKOptions(psk: String) -> NWProtocolTLS.Options{
         let tlsOptions = NWProtocolTLS.Options()
         let semaphore = DispatchSemaphore(value: 0)
         psk.data(using: .utf8)?.withUnsafeBytes{ (pointer:UnsafeRawBufferPointer) in
@@ -250,8 +249,7 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
 }
 
 
-//MARK:
-//MARK: SC Type Enumeration: Represents the CoAP types
+//MARK: - SC Type Enumeration: Represents the CoAP types
 
 public enum SCType: Int {
     case confirmable, nonConfirmable, acknowledgement, reset
@@ -299,8 +297,7 @@ public enum SCType: Int {
 }
 
 
-//MARK:
-//MARK: SC Option Enumeration: Represents the CoAP options
+//MARK: - SC Option Enumeration: Represents the CoAP options
 
 public enum SCOption: Int {
     case ifMatch = 1
@@ -471,8 +468,7 @@ public enum SCOption: Int {
 }
 
 
-//MARK:
-//MARK: SC Code Sample Enumeration: Provides the most common CoAP codes as raw values
+//MARK: - SC Code Sample Enumeration: Provides the most common CoAP codes as raw values
 
 public enum SCCodeSample: Int {
     case empty = 0
@@ -575,8 +571,7 @@ public enum SCCodeSample: Int {
 }
 
 
-//MARK:
-//MARK: SC Content Format Enumeration
+//MARK: - SC Content Format Enumeration
 
 public enum SCContentFormat: UInt {
     case plain = 0
@@ -617,8 +612,7 @@ public enum SCContentFormat: UInt {
 }
 
 
-//MARK:
-//MARK: SC Code Value struct: Represents the CoAP code. You can easily apply the CoAP code syntax c.dd (e.g. SCCodeValue(classValue: 0, detailValue: 01) equals 0.01)
+//MARK: - SC Code Value struct: Represents the CoAP code. You can easily apply the CoAP code syntax c.dd (e.g. SCCodeValue(classValue: 0, detailValue: 01) equals 0.01)
 
 public struct SCCodeValue: Equatable {
     let classValue: UInt8
@@ -676,8 +670,7 @@ public func ==(lhs: SCCodeValue, rhs: SCCodeValue) -> Bool {
 }
 
 
-//MARK:
-//MARK: UInt Extension
+//MARK: - UInt Extension
 
 extension UInt {
     public func toByteArray() -> [UInt8] {
@@ -701,8 +694,7 @@ extension UInt {
     }
 }
 
-//MARK:
-//MARK: String Extension
+//MARK: - String Extension
 
 extension String {
     static func toHexFromData(_ data: Data) -> String {
@@ -711,8 +703,7 @@ extension String {
     }
 }
 
-//MARK:
-//MARK: NSData Extension
+//MARK: - NSData Extension
 
 extension Data {
     static func fromOpaqueString(_ string: String) -> Data? {
@@ -726,8 +717,7 @@ extension Data {
 }
 
 
-//MARK:
-//MARK: SC Allowed Route Enumeration
+//MARK: - SC Allowed Route Enumeration
 
 public enum SCAllowedRoute: UInt {
     case get = 0b1
@@ -751,8 +741,7 @@ public enum SCAllowedRoute: UInt {
     }
 }
 
-//MARK:
-//MARK: Resource Implementation, used for SCServer
+//MARK: - Resource Implementation, used for SCServer
 
 open class SCResourceModel: NSObject {
     public let name: String // Name of the resource
@@ -794,8 +783,7 @@ open class SCResourceModel: NSObject {
     open func dataForDelete(queryDictionary: [String : String], options: [Int : [Data]]) -> (statusCode: SCCodeValue, payloadData: Data?, contentFormat: SCContentFormat?)? { return nil }
 }
 
-//MARK:
-//MARK: SC Message IMPLEMENTATION
+//MARK: - SC Message IMPLEMENTATION
 
 public class SCMessage: NSObject {
     
