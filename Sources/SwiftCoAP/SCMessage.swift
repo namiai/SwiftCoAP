@@ -113,8 +113,10 @@ public final class SCCoAPUDPTransportLayer: NSObject {
             if waitingForNextDatagram {
                 waitingForNextDatagram = false
                 connection.receiveMessage { [weak self] data, context, complete, error in
-                    waitingForNextDatagram = true
-                    guard let self = self else { return }
+                    guard let self = self else {
+                        connection.cancel()
+                        return
+                    }
                     if error != nil {
                         self.transportLayerDelegate?.transportLayerObject(self, didFailWithError: error! as NSError)
                         connection.cancel()
@@ -123,6 +125,7 @@ public final class SCCoAPUDPTransportLayer: NSObject {
                     if let data = data {
                         self.transportLayerDelegate?.transportLayerObject(self, didReceiveData: data, fromHost: hostPort.host, port: hostPort.port)
                     }
+                    waitingForNextDatagram = true
                 }
             }
         }
@@ -186,6 +189,7 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
             guard let self = self else { return }
             var connection: NWConnection!
             var hostPort: HostPortKey!
+            os_log("Connection attempt on endpoint %@", log: .default, type: .info, newConnection.endpoint.debugDescription)
             switch newConnection.endpoint {
             case .hostPort(host: let host, port: let port):
                 let port = port.rawValue
@@ -256,7 +260,7 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
             let dd = DispatchData(bytes: pointer)
             sec_protocol_options_add_pre_shared_key(tlsOptions.securityProtocolOptions, dd as __DispatchData, dd as __DispatchData)
             // TLS_PSK_WITH_AES_128_GCM_SHA256 as in Apple's example project. 'Boring SSL' complains anyway.
-            sec_protocol_options_append_tls_ciphersuite(tlsOptions.securityProtocolOptions, tls_ciphersuite_t(rawValue: TLS_PSK_WITH_AES_128_GCM_SHA256)!)
+            sec_protocol_options_append_tls_ciphersuite(tlsOptions.securityProtocolOptions, tls_ciphersuite_t(rawValue: UInt16(TLS_PSK_WITH_AES_128_GCM_SHA256))!)
         }
         semaphore.wait()
         return tlsOptions
@@ -1014,7 +1018,11 @@ public class SCMessage: NSObject {
         firstByte >>= 4
         let type = SCType(rawValue: Int(firstByte) & 0b11)
         firstByte >>= 2
-        if tokenLenght > 8 || type == nil || firstByte != UInt8(kCoapVersion)  { return nil }
+        guard tokenLenght <= 8,
+              type != nil,
+              firstByte == UInt8(kCoapVersion),
+              (4 + tokenLenght) <= data.count // to exclude a crash on parsing invalid data
+              else { return nil }
         
         //Assign header values to CoAP Message
         let message = SCMessage()
