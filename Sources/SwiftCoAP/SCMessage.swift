@@ -193,24 +193,33 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
             switch newConnection.endpoint {
             case .hostPort(host: let host, port: let port):
                 let port = port.rawValue
+                os_log("Connection endpoint %@", log: .default, type: .info, host.debugDescription)
                 switch host {
                 case .name(let name, _):
+                    os_log("Connection name %@", log: .default, type: .info, name)
                     hostPort = HostPortKey(host: name, port: port)
                     connection = self.setupStateUpdateHandler(for: newConnection, withHostPort: hostPort)
                 case .ipv4(let ip4):
+                    os_log("Connection ip4 %@", log: .default, type: .info, ip4.debugDescription)
                     guard let ip = String(data: ip4.rawValue, encoding: .utf8) else { return }
                     hostPort = HostPortKey(host: ip, port: port)
                     connection = self.setupStateUpdateHandler(for: newConnection, withHostPort: hostPort)
                 case .ipv6(let ip6):
+                    os_log("Connection ip6 %@", log: .default, type: .info, ip6.debugDescription)
                     guard let ip = String(data: ip6.rawValue, encoding: .utf8) else { return }
                     hostPort = HostPortKey(host: ip, port: port)
                     connection = self.setupStateUpdateHandler(for: newConnection, withHostPort: hostPort)
                 @unknown default:
                     return
                 }
-            case .service(name: _, type: _, domain: _, interface: _),
-                 .unix(path: _),
-                 .url(_):
+            case .service(name: let name, type: _, domain: let domain, interface: _):
+                os_log("Connection service name %@ domain %domain", log: .default, type: .info, name, domain)
+                return
+            case .unix(path: let path):
+                os_log("Connection path %@", log: .default, type: .info, path)
+                return
+            case .url(let url):
+                os_log("Connection url %@", log: .default, type: .info, url.description)
                 return
             @unknown default:
                 return
