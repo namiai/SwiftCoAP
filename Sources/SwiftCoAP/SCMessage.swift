@@ -214,8 +214,8 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
                 return
             }
             connection.start(queue: DispatchQueue.global(qos: .utility))
-            self.startReads(from: connection, withHostPort: HostPortKey(host: "", port: 0))
-            self.connections[HostPortKey(host: "", port: 0)] = connection
+            self.startReads(from: connection, withHostPort: hostPort)
+            self.connections[hostPort] = connection
         }
         listener?.stateUpdateHandler = { [weak self] newState in
             switch newState {
