@@ -59,7 +59,7 @@ struct HostPortKey: Hashable {
 /// SC CoAP UDP Transport Layer: This class is the default transport layer handler, sending data via UDP with help of `Network.framework`. If you want to create a custom transport layer handler, you have to create a custom class and adopt the SCCoAPTransportLayerProtocol. Next you have to pass your class to the init method of SCClient: init(delegate: SCClientDelegate?, transportLayerObject: SCCoAPTransportLayerProtocol). You will than get callbacks to send CoAP data and have to inform your delegate (in this case an object of type SCClient) when you receive a response by using the callbacks from SCCoAPTransportLayerDelegate.
 public final class SCCoAPUDPTransportLayer: NSObject {
     weak public var transportLayerDelegate: SCCoAPTransportLayerDelegate!
-    var connections: [HostPortKey: NWConnection] = [:]
+    var connections: [AnyHashable: NWConnection] = [:]
     var listener: NWListener?
     var networkParameters: NWParameters = .udp
 
@@ -225,8 +225,8 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
                 return
             }
             connection.start(queue: DispatchQueue.global(qos: .utility))
-            self.startReads(from: newConnection, withHostPort: hostPort)
-            self.connections[hostPort] = connection
+            self.startReads(from: connection, withHostPort: HostPortKey(host: "", port: 0))
+            self.connections[HostPortKey(host: "", port: 0)] = connection
         }
         listener?.stateUpdateHandler = { [weak self] newState in
             switch newState {
