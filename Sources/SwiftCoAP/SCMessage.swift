@@ -48,45 +48,40 @@ public protocol SCCoAPTransportLayerProtocol: AnyObject {
     func startListening(onPort listenPort: UInt16) throws
 }
 
-struct HostPortKey: Hashable {
-    var host: String
-    var port: UInt16
-}
-
 
 
 //MARK: - SC CoAP UDP Transport Layer
 /// SC CoAP UDP Transport Layer: This class is the default transport layer handler, sending data via UDP with help of `Network.framework`. If you want to create a custom transport layer handler, you have to create a custom class and adopt the SCCoAPTransportLayerProtocol. Next you have to pass your class to the init method of SCClient: init(delegate: SCClientDelegate?, transportLayerObject: SCCoAPTransportLayerProtocol). You will than get callbacks to send CoAP data and have to inform your delegate (in this case an object of type SCClient) when you receive a response by using the callbacks from SCCoAPTransportLayerDelegate.
 public final class SCCoAPUDPTransportLayer: NSObject {
     weak public var transportLayerDelegate: SCCoAPTransportLayerDelegate!
-    var connections: [AnyHashable: NWConnection] = [:]
+    var connections: [NWEndpoint: NWConnection] = [:]
     var listener: NWListener?
     var networkParameters: NWParameters = .udp
 
-    private func setupStateUpdateHandler(for connection: NWConnection, withHostPort hostPort: HostPortKey) -> NWConnection {
+    private func setupStateUpdateHandler(for connection: NWConnection, withEndpoint endpoint: NWEndpoint) -> NWConnection {
         connection.stateUpdateHandler = { [weak self] newState in
             switch newState {
             case .failed(let error):
-                os_log("Connection to HOST %@, PORT %d FAILED", log: .default, type: .error, "\(error)", hostPort.host, hostPort.port)
-                self?.connections[hostPort]?.cancel()
-                self?.connections.removeValue(forKey: hostPort)
+                os_log("Connection to ENDPOINT %@ FAILED", log: .default, type: .error, "\(error)", endpoint.debugDescription)
+                self?.connections[endpoint]?.cancel()
+                self?.connections.removeValue(forKey: endpoint)
                 guard let self = self else { return }
                 self.transportLayerDelegate?.transportLayerObject(self, didFailWithError: error as NSError)
             case .setup:
-                os_log("Connection to HOST %@, PORT %d entered SETUP state", log: .default, type: .info, hostPort.host, hostPort.port)
+                os_log("Connection to ENDPOINT %@ entered SETUP state", log: .default, type: .info, endpoint.debugDescription)
             case .waiting(let reason):
-                os_log("Connection to HOST %@, PORT %d entered WAITING state. Reason %@", log: .default, type: .info, hostPort.host, hostPort.port, reason.debugDescription)
+                os_log("Connection to ENDPOINT %@ entered WAITING state. Reason %@", log: .default, type: .info, endpoint.debugDescription, reason.debugDescription)
             case .preparing:
-                os_log("Connection to HOST %@, PORT %d entered PREPAIRING state", log: .default, type: .info, hostPort.host, hostPort.port)
+                os_log("Connection to ENDPOINT %@ entered PREPAIRING state", log: .default, type: .info, endpoint.debugDescription)
             case .ready:
-                os_log("Connection to HOST %@, PORT %d entered READY state", log: .default, type: .info, hostPort.host, hostPort.port)
+                os_log("Connection to ENDPOINT %@ entered READY state", log: .default, type: .info, endpoint.debugDescription)
                 guard let self = self else { return }
-                self.startReads(from: connection, withHostPort: hostPort)
+                self.startReads(from: connection, withEndpoint: endpoint)
             case .cancelled:
-                os_log("Connection to HOST %@, PORT %d is CANCELLED", log: .default, type: .info, hostPort.host, hostPort.port)
-                self?.connections.removeValue(forKey: hostPort)
+                os_log("Connection to ENDPOINT %@ is CANCELLED", log: .default, type: .info, endpoint.debugDescription)
+                self?.connections.removeValue(forKey: endpoint)
             @unknown default:
-                os_log("Connection to HOST %@, PORT %d is in UNKNOWN state", log: .default, type: .info, hostPort.host, hostPort.port)
+                os_log("Connection to ENDPOINT %@ is in UNKNOWN state", log: .default, type: .info, endpoint.debugDescription)
             }
         }
         return connection
@@ -95,7 +90,7 @@ public final class SCCoAPUDPTransportLayer: NSObject {
     private func mustGetConnection(forHost host: String, port: UInt16) -> NWConnection {
         os_log("Currently %d NWConnection object(s) are alive", connections.count)
         os_log("Getting connection object for connection to HOST %@, PORT %d", log: .default, type: .info, host, port)
-        let connectionKey = HostPortKey(host: host, port: port)
+        let connectionKey = NWEndpoint.hostPort(host: NWEndpoint.Host(host), port: NWEndpoint.Port(port.description)!)
         // Reuse only connections in untroubled state
         if let connection = connections[connectionKey], [.ready, .preparing, .setup].contains(connection.state) {
             os_log("Reusing existing NWConnection to HOST %@, PORT %d", log: .default, type: .info, host, port)
@@ -107,7 +102,7 @@ public final class SCCoAPUDPTransportLayer: NSObject {
         return connection
     }
 
-    private func startReads(from connection: NWConnection, withHostPort hostPort: HostPortKey) {
+    private func startReads(from connection: NWConnection, withEndpoint endpoint: NWEndpoint) {
         var waitingForNextDatagram = true
         while connection.state == .ready {
             if waitingForNextDatagram {
@@ -122,12 +117,35 @@ public final class SCCoAPUDPTransportLayer: NSObject {
                         connection.cancel()
                         return
                     }
-                    if let data = data {
+                    if let data = data, let hostPort = self.endpointToHostPort(endpoint) {
                         self.transportLayerDelegate?.transportLayerObject(self, didReceiveData: data, fromHost: hostPort.host, port: hostPort.port)
                     }
                     waitingForNextDatagram = true
                 }
             }
+        }
+    }
+
+    private func endpointToHostPort(_ endpoint: NWEndpoint) -> (host: String, port: UInt16)? {
+        switch endpoint {
+        case .hostPort(host: let host, port: let port):
+            let port = port.rawValue
+            switch host {
+            case .name(let name, _):
+                return (host: name, port: port)
+            case .ipv4(let ip):
+                return (host: ip.debugDescription, port: port)
+            case .ipv6(let ip):
+                return (host: ip.debugDescription, port: port)
+            @unknown default:
+                return nil
+            }
+        case .service(name: _, type: _, domain: _, interface: _),
+             .unix(path:_),
+             .url(_):
+            return nil
+        @unknown default:
+            return nil
         }
     }
 }
@@ -152,10 +170,11 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
     }
 
     public func sendCoAPData(_ data: Data, toHost host: String, port: UInt16) throws {
+//        NWEndpoint.hostPort(host: NWEndpoint.Host(host), port: NWEndpoint.Port(port.description)!)
         var connection = mustGetConnection(forHost: host, port: port)
-        let hostPort = HostPortKey(host: host, port: port)
+        let hostPort = NWEndpoint.hostPort(host: NWEndpoint.Host(host), port: NWEndpoint.Port(port.description)!)
         if connection.stateUpdateHandler == nil {
-            connection = setupStateUpdateHandler(for: connection, withHostPort: hostPort)
+            connection = setupStateUpdateHandler(for: connection, withEndpoint: hostPort)
         }
         if connection.state == .setup {
             connection.start(queue: DispatchQueue.global(qos: .utility))
@@ -187,35 +206,11 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
         listener = try NWListener(using: networkParameters, on: NWEndpoint.Port(rawValue: listenPort)!)
         listener?.newConnectionHandler = { [weak self] newConnection in
             guard let self = self else { return }
-            var connection: NWConnection!
-            var hostPort: HostPortKey!
             os_log("Connection attempt on endpoint %@", log: .default, type: .info, newConnection.endpoint.debugDescription)
-            switch newConnection.endpoint {
-            case .hostPort(host: let host, port: let port):
-                let port = port.rawValue
-                switch host {
-                case .name(let name, _):
-                    hostPort = HostPortKey(host: name, port: port)
-                    connection = self.setupStateUpdateHandler(for: newConnection, withHostPort: hostPort)
-                case .ipv4(let ip):
-                    hostPort = HostPortKey(host: ip.debugDescription, port: port)
-                    connection = self.setupStateUpdateHandler(for: newConnection, withHostPort: hostPort)
-                case .ipv6(let ip):
-                    hostPort = HostPortKey(host: ip.debugDescription, port: port)
-                    connection = self.setupStateUpdateHandler(for: newConnection, withHostPort: hostPort)
-                @unknown default:
-                    return
-                }
-            case .service(name: _, type: _, domain: _, interface: _),
-                 .unix(path:_),
-                 .url(_):
-                return
-            @unknown default:
-                return
-            }
+            let connection = self.setupStateUpdateHandler(for: newConnection, withEndpoint: newConnection.endpoint)
             connection.start(queue: DispatchQueue.global(qos: .utility))
-            self.startReads(from: connection, withHostPort: hostPort)
-            self.connections[hostPort] = connection
+            self.startReads(from: connection, withEndpoint: newConnection.endpoint)
+            self.connections[newConnection.endpoint] = connection
         }
         listener?.stateUpdateHandler = { [weak self] newState in
             switch newState {
