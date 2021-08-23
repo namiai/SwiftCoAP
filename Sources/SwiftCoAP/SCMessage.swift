@@ -58,7 +58,8 @@ public final class SCCoAPUDPTransportLayer: NSObject {
     var listener: NWListener?
     var networkParameters: NWParameters = .udp
 
-    private func setupStateUpdateHandler(for connection: NWConnection, withEndpoint endpoint: NWEndpoint) -> NWConnection {
+    private func setupStateUpdateHandler(for connection: NWConnection) -> NWConnection {
+        let endpoint = connection.endpoint
         connection.stateUpdateHandler = { [weak self] newState in
             switch newState {
             case .failed(let error):
@@ -87,18 +88,14 @@ public final class SCCoAPUDPTransportLayer: NSObject {
         return connection
     }
 
-    private func mustGetConnection(forHost host: String, port: UInt16) -> NWConnection {
-        os_log("Currently %d NWConnection object(s) are alive", connections.count)
-        os_log("Getting connection object for connection to HOST %@, PORT %d", log: .default, type: .info, host, port)
-        let connectionKey = NWEndpoint.hostPort(host: NWEndpoint.Host(host), port: NWEndpoint.Port(port.description)!)
+    private func mustGetConnection(forEndpoint endpoint: NWEndpoint) -> NWConnection {
+        let connectionKey = endpoint
         // Reuse only connections in untroubled state
         if let connection = connections[connectionKey], [.ready, .preparing, .setup].contains(connection.state) {
-            os_log("Reusing existing NWConnection to HOST %@, PORT %d", log: .default, type: .info, host, port)
             return connection
         }
-        let connection = NWConnection(host: NWEndpoint.Host(host), port: NWEndpoint.Port(rawValue: port)!, using: networkParameters)
+        let connection = NWConnection(to: endpoint, using: networkParameters)
         connections[connectionKey] = connection
-        os_log("New NWConnection created to HOST %@, PORT %d", log: .default, type: .info, host, port)
         return connection
     }
 
@@ -106,7 +103,7 @@ public final class SCCoAPUDPTransportLayer: NSObject {
         guard connection.state == .ready else {
             return
         }
-        
+
         connection.receiveMessage { [weak self] data, context, _, maybeError in
             guard let self = self else {
                 connection.cancel()
@@ -168,11 +165,21 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
     }
 
     public func sendCoAPData(_ data: Data, toHost host: String, port: UInt16) throws {
+        try sendCoAPData(
+            data,
+            toEndpoint: NWEndpoint.hostPort(
+                host: NWEndpoint.Host(host),
+                port: NWEndpoint.Port(rawValue: port)!
+            )
+        )
+    }
+
+
+    public func sendCoAPData(_ data: Data, toEndpoint endpoint: NWEndpoint) throws {
 //        NWEndpoint.hostPort(host: NWEndpoint.Host(host), port: NWEndpoint.Port(port.description)!)
-        var connection = mustGetConnection(forHost: host, port: port)
-        let hostPort = NWEndpoint.hostPort(host: NWEndpoint.Host(host), port: NWEndpoint.Port(port.description)!)
+        var connection = mustGetConnection(forEndpoint: endpoint)
         if connection.stateUpdateHandler == nil {
-            connection = setupStateUpdateHandler(for: connection, withEndpoint: hostPort)
+            connection = setupStateUpdateHandler(for: connection)
         }
         if connection.state == .setup {
             connection.start(queue: DispatchQueue.global(qos: .utility))
@@ -205,7 +212,7 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
         listener?.newConnectionHandler = { [weak self] newConnection in
             guard let self = self else { return }
             os_log("Connection attempt on endpoint %@", log: .default, type: .info, newConnection.endpoint.debugDescription)
-            let connection = self.setupStateUpdateHandler(for: newConnection, withEndpoint: newConnection.endpoint)
+            let connection = self.setupStateUpdateHandler(for: newConnection)
             connection.start(queue: DispatchQueue.global(qos: .utility))
             self.startReads(from: connection, withEndpoint: newConnection.endpoint)
             self.connections[newConnection.endpoint] = connection
