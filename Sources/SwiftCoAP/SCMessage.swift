@@ -18,13 +18,13 @@ public enum SCCoAPTransportLayerError: Error {
 }
 
 
-//MARK: - SC CoAP Transport Layer Delegate Protocol declaration. It is implemented by SCClient to receive responses. Your custom transport layer handler must call these callbacks to notify the SCClient object.
+// MARK: - SC CoAP Transport Layer Delegate Protocol declaration. It is implemented by SCClient to receive responses. Your custom transport layer handler must call these callbacks to notify the SCClient object.
 
 public protocol SCCoAPTransportLayerDelegate: AnyObject {
-    //CoAP Data Received
+    // CoAP Data Received
     func transportLayerObject(_ transportLayerObject: SCCoAPTransportLayerProtocol, didReceiveData data: Data, fromHost host: String, port: UInt16)
     
-    //Error occured. Provide an appropriate NSError object.
+    // Error occured. Provide an appropriate NSError object.
     func transportLayerObject(_ transportLayerObject: SCCoAPTransportLayerProtocol, didFailWithError error: NSError)
 }
 
@@ -32,20 +32,37 @@ public protocol SCCoAPTransportLayerDelegate: AnyObject {
 //MARK: - SC CoAP Transport Layer Protocol declaration
 
 public protocol SCCoAPTransportLayerProtocol: AnyObject {
-    //SCClient uses this property to assign itself as delegate
+    // SCClient uses this property to assign itself as delegate
     var transportLayerDelegate: SCCoAPTransportLayerDelegate! { get set }
     
-    //SClient calls this method when it wants to send CoAP data
+    // `SClient` calls one of the following methods when it wants to send CoAP data.
+    //
+    // Only a `sendCoAPData(_ data: Data, toEndpoint endpoint: NWEndpoint)` should be implemented.
+    // A method `sendCoAPData(_ data: Data, toHost host: String, port: UInt16)` has the default implementation in protocol extension
+    // just converting `host` and `port` into an `NWEndpoint` object.
     func sendCoAPData(_ data: Data, toHost host: String, port: UInt16) throws
+    func sendCoAPData(_ data: Data, toEndpoint endpoint: NWEndpoint) throws
 
-    //Called when the transmission is over. Clear your states (e.g. close sockets)
+    // Called when the transmission is over. Clear your states (e.g. close sockets)
     func closeTransmission()
     
-    //Start to listen for Messages. Prepare e.g. sockets for receiving data. This method will only be called by SCServer
+    // Start to listen for Messages. Prepare e.g. sockets for receiving data. This method will only be called by SCServer
     func startListening() throws
 
     // Same as `startListening()` but on non-default port.
     func startListening(onPort listenPort: UInt16) throws
+}
+
+extension SCCoAPTransportLayerProtocol {
+    public func sendCoAPData(_ data: Data, toHost host: String, port: UInt16) throws {
+        try sendCoAPData(
+            data,
+            toEndpoint: NWEndpoint.hostPort(
+                host: NWEndpoint.Host(host),
+                port: NWEndpoint.Port(rawValue: port)!
+            )
+        )
+    }
 }
 
 
@@ -77,7 +94,7 @@ public final class SCCoAPUDPTransportLayer: NSObject {
             case .ready:
                 os_log("Connection to ENDPOINT %@ entered READY state", log: .default, type: .info, endpoint.debugDescription)
                 guard let self = self else { return }
-                self.startReads(from: connection, withEndpoint: endpoint)
+                self.startReads(from: connection)
             case .cancelled:
                 os_log("Connection to ENDPOINT %@ is CANCELLED", log: .default, type: .info, endpoint.debugDescription)
                 self?.connections.removeValue(forKey: endpoint)
@@ -99,7 +116,7 @@ public final class SCCoAPUDPTransportLayer: NSObject {
         return connection
     }
 
-    private func startReads(from connection: NWConnection, withEndpoint endpoint: NWEndpoint) {
+    private func startReads(from connection: NWConnection) {
         guard connection.state == .ready else {
             return
         }
@@ -114,10 +131,10 @@ public final class SCCoAPUDPTransportLayer: NSObject {
                 connection.cancel()
                 return
             }
-            if let data = data, let hostPort = self.endpointToHostPort(endpoint) {
+            if let data = data, let hostPort = self.endpointToHostPort(connection.endpoint) {
                 self.transportLayerDelegate?.transportLayerObject(self, didReceiveData: data, fromHost: hostPort.host, port: hostPort.port)
             }
-            self.startReads(from: connection, withEndpoint: endpoint)
+            self.startReads(from: connection)
         }
     }
 
@@ -164,16 +181,6 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
         self.networkParameters = networkParameters
     }
 
-    public func sendCoAPData(_ data: Data, toHost host: String, port: UInt16) throws {
-        try sendCoAPData(
-            data,
-            toEndpoint: NWEndpoint.hostPort(
-                host: NWEndpoint.Host(host),
-                port: NWEndpoint.Port(rawValue: port)!
-            )
-        )
-    }
-
 
     public func sendCoAPData(_ data: Data, toEndpoint endpoint: NWEndpoint) throws {
 //        NWEndpoint.hostPort(host: NWEndpoint.Host(host), port: NWEndpoint.Port(port.description)!)
@@ -214,7 +221,7 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
             os_log("Connection attempt on endpoint %@", log: .default, type: .info, newConnection.endpoint.debugDescription)
             let connection = self.setupStateUpdateHandler(for: newConnection)
             connection.start(queue: DispatchQueue.global(qos: .utility))
-            self.startReads(from: connection, withEndpoint: newConnection.endpoint)
+            self.startReads(from: connection)
             self.connections[newConnection.endpoint] = connection
         }
         listener?.stateUpdateHandler = { [weak self] newState in
