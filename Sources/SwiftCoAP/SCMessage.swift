@@ -51,6 +51,10 @@ public protocol SCCoAPTransportLayerProtocol: AnyObject {
 
     // Same as `startListening()` but on non-default port.
     func startListening(onPort listenPort: UInt16) throws
+
+    // Optional to implement. Returns host and port tuple if an endpoint has it.
+    // Otherwise, if endpoint is for service, unix path, url or anything else returns nil.
+    func endpointToHostPort(_ endpoint: NWEndpoint) -> (host: String, port: UInt16)?
 }
 
 extension SCCoAPTransportLayerProtocol {
@@ -62,6 +66,29 @@ extension SCCoAPTransportLayerProtocol {
                 port: NWEndpoint.Port(rawValue: port)!
             )
         )
+    }
+
+    public func endpointToHostPort(_ endpoint: NWEndpoint) -> (host: String, port: UInt16)? {
+        switch endpoint {
+        case .hostPort(host: let host, port: let port):
+            let port = port.rawValue
+            switch host {
+            case .name(let name, _):
+                return (host: name, port: port)
+            case .ipv4(let ip):
+                return (host: ip.debugDescription, port: port)
+            case .ipv6(let ip):
+                return (host: ip.debugDescription, port: port)
+            @unknown default:
+                return nil
+            }
+        case .service(name: _, type: _, domain: _, interface: _),
+             .unix(path:_),
+             .url(_):
+            return nil
+        @unknown default:
+            return nil
+        }
     }
 }
 
@@ -138,28 +165,6 @@ public final class SCCoAPUDPTransportLayer: NSObject {
         }
     }
 
-    private func endpointToHostPort(_ endpoint: NWEndpoint) -> (host: String, port: UInt16)? {
-        switch endpoint {
-        case .hostPort(host: let host, port: let port):
-            let port = port.rawValue
-            switch host {
-            case .name(let name, _):
-                return (host: name, port: port)
-            case .ipv4(let ip):
-                return (host: ip.debugDescription, port: port)
-            case .ipv6(let ip):
-                return (host: ip.debugDescription, port: port)
-            @unknown default:
-                return nil
-            }
-        case .service(name: _, type: _, domain: _, interface: _),
-             .unix(path:_),
-             .url(_):
-            return nil
-        @unknown default:
-            return nil
-        }
-    }
 }
 
 extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
@@ -183,7 +188,6 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
 
 
     public func sendCoAPData(_ data: Data, toEndpoint endpoint: NWEndpoint) throws {
-//        NWEndpoint.hostPort(host: NWEndpoint.Host(host), port: NWEndpoint.Port(port.description)!)
         var connection = mustGetConnection(forEndpoint: endpoint)
         if connection.stateUpdateHandler == nil {
             connection = setupStateUpdateHandler(for: connection)
@@ -836,11 +840,10 @@ public class SCMessage: NSObject {
     
     //The following properties are modified by SCClient/SCServer. Modification has no effect and is therefore not recommended
     public internal(set) var blockBody: Data? //Helper for Block1 tranmission. Used by SCClient, modification has no effect
-    public var hostName: String?
-    public var port: UInt16?
-    public var resourceForConfirmableResponse: SCResourceModel?
-    public var messageId: UInt16!
-    public var token: UInt64 = 0
+    public internal(set) var endpoint: NWEndpoint?
+    public internal(set) var resourceForConfirmableResponse: SCResourceModel?
+    public internal(set) var messageId: UInt16!
+    public internal(set) var token: UInt64 = 0
     
     var timeStamp: Date?
     
@@ -855,7 +858,7 @@ public class SCMessage: NSObject {
     }
     
     public func equalForCachingWithMessage(_ message: SCMessage) -> Bool {
-        if code == message.code && hostName == message.hostName && port == message.port {
+        if code == message.code && endpoint == message.endpoint {
             let firstSet = Set(options.keys)
             let secondSet = Set(message.options.keys)
             
@@ -888,8 +891,7 @@ public class SCMessage: NSObject {
     public static func copyFromMessage(_ message: SCMessage) -> SCMessage {
         let copiedMessage = SCMessage(code: message.code, type: message.type, payload: message.payload)
         copiedMessage.options = message.options
-        copiedMessage.hostName = message.hostName
-        copiedMessage.port = message.port
+        copiedMessage.endpoint = message.endpoint
         copiedMessage.messageId = message.messageId
         copiedMessage.token = message.token
         copiedMessage.timeStamp = message.timeStamp
@@ -1027,7 +1029,7 @@ public class SCMessage: NSObject {
               type != nil,
               firstByte == UInt8(kCoapVersion),
               (4 + tokenLenght) <= data.count // to exclude a crash on parsing invalid data
-              else { return nil }
+        else { return nil }
         
         //Assign header values to CoAP Message
         let message = SCMessage()
