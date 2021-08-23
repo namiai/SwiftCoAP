@@ -8,6 +8,7 @@
 
 import Foundation
 import Network
+import os.log
 
 //MARK: - SC Client Delegate Protocol declaration
 
@@ -315,6 +316,7 @@ public class SCClient: NSObject {
     
     fileprivate func sendHttpMessageFromCoAPMessage(_ message: SCMessage) {
         guard let endpoint = message.endpoint, let hostPort = transportLayerObject.endpointToHostPort(endpoint) else {
+            os_log(.error, "Can't call 'sendHttpMessageFromCoAPMessage' with endpoint %@", message.endpoint?.debugDescription ?? "NO ENDPOINT")
             return
         }
         let urlRequest = message.toHttpUrlRequestWithUrl()
