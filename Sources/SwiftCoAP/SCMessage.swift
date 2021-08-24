@@ -23,9 +23,22 @@ public enum SCCoAPTransportLayerError: Error {
 public protocol SCCoAPTransportLayerDelegate: AnyObject {
     // CoAP Data Received
     func transportLayerObject(_ transportLayerObject: SCCoAPTransportLayerProtocol, didReceiveData data: Data, fromHost host: String, port: UInt16)
+    func transportLayerObject(_ transportLayerObject: SCCoAPTransportLayerProtocol, didReceiveData data: Data, fromEndpoint endpoint: NWEndpoint)
     
     // Error occured. Provide an appropriate NSError object.
     func transportLayerObject(_ transportLayerObject: SCCoAPTransportLayerProtocol, didFailWithError error: NSError)
+}
+
+extension SCCoAPTransportLayerDelegate {
+    public func transportLayerObject(_ transportLayerObject: SCCoAPTransportLayerProtocol, didReceiveData data: Data, fromHost host: String, port: UInt16) {
+        self.transportLayerObject(transportLayerObject, didReceiveData: data, fromEndpoint: NWEndpoint.hostPort(
+            host: NWEndpoint.Host(host),
+            port: NWEndpoint.Port(rawValue: port)!
+        ))
+    }
+    public func transportLayerObject(_ transportLayerObject: SCCoAPTransportLayerProtocol, didReceiveData data: Data, fromEndpoint endpoint: NWEndpoint){
+        // NOTE: You really want to implement this method in a class, this No-Op implementation is to allow legacy code work.
+    }
 }
 
 
@@ -51,10 +64,6 @@ public protocol SCCoAPTransportLayerProtocol: AnyObject {
 
     // Same as `startListening()` but on non-default port.
     func startListening(onPort listenPort: UInt16) throws
-
-    // Optional to implement. Returns host and port tuple if an endpoint has it.
-    // Otherwise, if endpoint is for service, unix path, url or anything else returns nil.
-    func endpointToHostPort(_ endpoint: NWEndpoint) -> (host: String, port: UInt16)?
 }
 
 extension SCCoAPTransportLayerProtocol {
@@ -66,29 +75,6 @@ extension SCCoAPTransportLayerProtocol {
                 port: NWEndpoint.Port(rawValue: port)!
             )
         )
-    }
-
-    public func endpointToHostPort(_ endpoint: NWEndpoint) -> (host: String, port: UInt16)? {
-        switch endpoint {
-        case .hostPort(host: let host, port: let port):
-            let port = port.rawValue
-            switch host {
-            case .name(let name, _):
-                return (host: name, port: port)
-            case .ipv4(let ip):
-                return (host: ip.debugDescription, port: port)
-            case .ipv6(let ip):
-                return (host: ip.debugDescription, port: port)
-            @unknown default:
-                return nil
-            }
-        case .service(name: _, type: _, domain: _, interface: _),
-             .unix(path:_),
-             .url(_):
-            return nil
-        @unknown default:
-            return nil
-        }
     }
 }
 
@@ -158,8 +144,8 @@ public final class SCCoAPUDPTransportLayer: NSObject {
                 connection.cancel()
                 return
             }
-            if let data = data, let hostPort = self.endpointToHostPort(connection.endpoint) {
-                self.transportLayerDelegate?.transportLayerObject(self, didReceiveData: data, fromHost: hostPort.host, port: hostPort.port)
+            if let data = data {
+                self.transportLayerDelegate?.transportLayerObject(self, didReceiveData: data, fromEndpoint: connection.endpoint)
             }
             self.startReads(from: connection)
         }
@@ -168,6 +154,7 @@ public final class SCCoAPUDPTransportLayer: NSObject {
 }
 
 extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
+
     /// Passing a PSK to init sets all NWConnection and NWListener objects if any created
     /// to use DTLS with provided PSK.
     /// - Parameter psk: A Preshared Key in plain text form.

@@ -315,7 +315,7 @@ public class SCClient: NSObject {
     }
     
     fileprivate func sendHttpMessageFromCoAPMessage(_ message: SCMessage) {
-        guard let endpoint = message.endpoint, let hostPort = transportLayerObject.endpointToHostPort(endpoint) else {
+        guard let endpoint = message.endpoint, let hostPort = endpointToHostPort(endpoint) else {
             os_log(.error, "Can't call 'sendHttpMessageFromCoAPMessage' with endpoint %@", message.endpoint?.debugDescription ?? "NO ENDPOINT")
             return
         }
@@ -342,6 +342,29 @@ public class SCClient: NSObject {
             }
         }
     }
+
+    fileprivate func endpointToHostPort(_ endpoint: NWEndpoint) -> (host: String, port: UInt16)? {
+        switch endpoint {
+        case .hostPort(host: let host, port: let port):
+            let port = port.rawValue
+            switch host {
+            case .name(let name, _):
+                return (host: name, port: port)
+            case .ipv4(let ip):
+                return (host: ip.debugDescription, port: port)
+            case .ipv6(let ip):
+                return (host: ip.debugDescription, port: port)
+            @unknown default:
+                return nil
+            }
+        case .service(name: _, type: _, domain: _, interface: _),
+             .unix(path:_),
+             .url(_):
+            return nil
+        @unknown default:
+            return nil
+        }
+    }
 }
 
 
@@ -350,10 +373,8 @@ public class SCClient: NSObject {
 // MARK: SC CoAP Transport Layer Delegate
 
 extension SCClient: SCCoAPTransportLayerDelegate {
-    public func transportLayerObject(_ transportLayerObject: SCCoAPTransportLayerProtocol, didReceiveData data: Data, fromHost host: String, port: UInt16) {
+    public func transportLayerObject(_ transportLayerObject: SCCoAPTransportLayerProtocol, didReceiveData data: Data, fromEndpoint endpoint: NWEndpoint) {
         if let message = SCMessage.fromData(data) {
-
-            let endpoint = NWEndpoint.hostPort(host: NWEndpoint.Host(host), port: NWEndpoint.Port(rawValue: port)!)
 
             //Check for spam
             if message.messageId != messageInTransmission.messageId && message.token != messageInTransmission.token {

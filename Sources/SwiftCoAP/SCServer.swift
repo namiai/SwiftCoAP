@@ -557,12 +557,10 @@ public class SCServer: NSObject {
 // MARK: SC CoAP Transport Layer Delegate
 
 extension SCServer: SCCoAPTransportLayerDelegate {
-    public func transportLayerObject(_ transportLayerObject: SCCoAPTransportLayerProtocol, didReceiveData data: Data, fromHost host: String, port: UInt16) {
+    public func transportLayerObject(_ transportLayerObject: SCCoAPTransportLayerProtocol, didReceiveData data: Data, fromEndpoint endpoint: NWEndpoint) {
         if let message = SCMessage.fromData(data) {
-            let endpoint = NWEndpoint.hostPort(host: NWEndpoint.Host(host), port: NWEndpoint.Port(rawValue: port)!)
-
             message.endpoint = endpoint
-            
+
             //Filter
             
             var resultType: SCType
