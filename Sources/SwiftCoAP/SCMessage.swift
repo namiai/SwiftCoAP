@@ -227,9 +227,11 @@ public final class SCCoAPUDPTransportLayer {
     }
     
     internal func notifyDelegatesAboutError(for endpoint: NWEndpoint, error: Error) {
-        self.transportLayerDelegates.forEach { (key, value) in
-            if key.endpoint == endpoint {
-                value.delegate.transportLayerObject(self, didFailWithError: error as NSError)
+        operationsQueue.sync(flags: .barrier) {
+            self.transportLayerDelegates.forEach { (key, value) in
+                if key.endpoint == endpoint {
+                    value.delegate.transportLayerObject(self, didFailWithError: error as NSError)
+                }
             }
         }
     }
