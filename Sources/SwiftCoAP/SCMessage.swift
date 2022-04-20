@@ -159,7 +159,9 @@ public final class SCCoAPUDPTransportLayer {
                 return
             }
             if let error = maybeError {
-                self.notifyDelegatesAboutError(for: connection.endpoint, error: error)
+                if error != NWError.posix(.ECANCELED) {
+                    self.notifyDelegatesAboutError(for: connection.endpoint, error: error)
+                }
                 self.cancelConnection(to: connection.endpoint)
                 return
             }
@@ -215,23 +217,21 @@ public final class SCCoAPUDPTransportLayer {
     }
     
     internal func updateMessageId(for endpoint: NWEndpoint, newMessageId: UInt16) {
-        operationsQueue.sync { [weak self] in
+        operationsQueue.async { [weak self] in
             self?.messageIdsPerEndpoint[endpoint] = newMessageId
         }
     }
     
     internal func updateLastReceivedMessageTs(for endpoint: NWEndpoint) {
-        operationsQueue.sync {
+        operationsQueue.async {
             self.connections[endpoint]?.lastReceivedMessageTs = Date().timeIntervalSince1970
         }
     }
     
     internal func notifyDelegatesAboutError(for endpoint: NWEndpoint, error: Error) {
-        operationsQueue.sync(flags: .barrier) {
-            self.transportLayerDelegates.forEach { (key, value) in
-                if key.endpoint == endpoint {
-                    value.delegate.transportLayerObject(self, didFailWithError: error as NSError)
-                }
+        self.transportLayerDelegates.forEach { (key, value) in
+            if key.endpoint == endpoint {
+                value.delegate.transportLayerObject(self, didFailWithError: error as NSError)
             }
         }
     }
@@ -330,15 +330,16 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
         }
     }
     
-    public func sendCoAPMessage(_ message: SCMessage, toEndpoint endpoint: NWEndpoint, token: UInt64?, delegate: SCCoAPTransportLayerDelegate?) throws {
-        try operationsQueue.sync {[weak self] in
-            guard let self = self else { throw SCCoAPTransportLayerError.sendError(errorDescription: "Instance is deallocated")}
-            let connection = self.mustGetConnection(forEndpoint: endpoint)
-            
-            guard let data = message.toData() else { throw SCCoAPTransportLayerError.encodeError }
+    public func sendCoAPMessage(_ message: SCMessage, toEndpoint endpoint: NWEndpoint, token: UInt64?, delegate: SCCoAPTransportLayerDelegate?)  throws {
+        guard let data = message.toData() else { throw SCCoAPTransportLayerError.encodeError }
+        guard let connection = operationsQueue.sync(execute: { [weak self] () -> NWConnection? in
+            guard let self = self else { return nil }
             if let delegate = delegate, let token = token {
                 self.transportLayerDelegates[MessageTransportIdentifier(token: token, endpoint: endpoint)] = MessageTransportDelegate(delegate: delegate, observation: message.isObservation())
+                
             }
+            return self.mustGetConnection(forEndpoint: endpoint)
+        }) else { return }
             os_log("<<< %@",log: .default, type:.debug, "Endpoint: \(endpoint.debugDescription), Message \(message.toString())")
             connection.send(content: data, completion: .contentProcessed{ [weak self] error in
                 guard let self = self else { return }
@@ -349,11 +350,10 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
                     }
                 }
             })
-        }
     }
     
     public func cancelMessageTransmission(to endpoint: NWEndpoint, withToken token: UInt64) {
-        let _ = operationsQueue.sync {[weak self] in
+        let _ = operationsQueue.async {[weak self] in
             self?.transportLayerDelegates.removeValue(forKey: MessageTransportIdentifier(token: token, endpoint: endpoint))
         }
     }
@@ -384,7 +384,7 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
     }
     
     public func cancelConnection(to endpoint: NWEndpoint) {
-        operationsQueue.sync { [weak self] in
+        operationsQueue.async { [weak self] in
             guard let self = self else { return }
             if let coapConnection = self.connections[endpoint] {
                 coapConnection.pingTimer?.invalidate()
