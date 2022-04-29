@@ -20,7 +20,7 @@ public enum SCCoAPTransportLayerError: Error {
 
 // MARK: - SC CoAP Transport Layer Delegate Protocol declaration. It is implemented by SCClient to receive responses. Your custom transport layer handler must call these callbacks to notify the SCClient object.
 
-public protocol SCCoAPTransportLayerDelegate: AnyObject {
+public protocol SCCoAPTransportLayerDelegate {
     // CoAP Data Received
     func transportLayerObject(_ transportLayerObject: SCCoAPTransportLayerProtocol, didReceiveData data: Data, fromHost host: String, port: UInt16)
     func transportLayerObject(_ transportLayerObject: SCCoAPTransportLayerProtocol, didReceiveData data: Data, fromEndpoint endpoint: NWEndpoint)
@@ -77,7 +77,7 @@ public struct CoAPConnection {
 //MARK: - SC CoAP UDP Transport Layer
 /// SC CoAP UDP Transport Layer: This class is the default transport layer handler, sending data via UDP with help of `Network.framework`. If you want to create a custom transport layer handler, you have to create a custom class and adopt the SCCoAPTransportLayerProtocol. Next you have to pass your class to the init method of SCClient: init(delegate: SCClientDelegate?, transportLayerObject: SCCoAPTransportLayerProtocol). You will than get callbacks to send CoAP data and have to inform your delegate (in this case an object of type SCClient) when you receive a response by using the callbacks from SCCoAPTransportLayerDelegate.
 public final class SCCoAPUDPTransportLayer {
-    internal let kPingInterval:TimeInterval = 5
+    internal let kPingInterval:TimeInterval = 1.5
     internal var transportLayerDelegates: [MessageTransportIdentifier: MessageTransportDelegate] = [:]
     internal var connections: [NWEndpoint: CoAPConnection] = [:]
     internal var messageIdsPerEndpoint:[NWEndpoint:UInt16] = [:]
