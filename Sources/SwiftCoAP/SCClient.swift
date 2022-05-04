@@ -12,7 +12,7 @@ import os.log
 
 //MARK: - SC Client Delegate Protocol declaration
 
-public protocol SCClientDelegate: AnyObject {
+public protocol SCClientDelegate {
     
     //Tells the delegate that a valid CoAP message was received
     func swiftCoapClient(_ client: SCClient, didReceiveMessage message: SCMessage)
@@ -58,7 +58,7 @@ public class SCClient {
     
     //INTERNAL PROPERTIES (allowed to modify)
     
-    public weak var delegate: SCClientDelegate?
+    public var delegate: SCClientDelegate?
     public var autoBlock1SZX: UInt? = 2 { didSet { if let newValue = autoBlock1SZX { autoBlock1SZX = min(6, newValue) } } } //If not nil, Block1 transfer will be used automatically when the payload size exceeds the value 2^(autoBlock1SZX + 4). Valid Values: 0-6.
     
     public var httpProxyingData: (hostName: String, port: UInt16)?     //If not nil, all messages will be sent via http to the given proxy address

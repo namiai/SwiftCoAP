@@ -42,7 +42,7 @@ extension SCCoAPTransportLayerDelegate {
 
 //MARK: - SC CoAP Transport Layer Protocol declaration
 
-public protocol SCCoAPTransportLayerProtocol: AnyObject {
+public protocol SCCoAPTransportLayerProtocol {
     // `SClient` calls one of the following methods when it wants to send CoAP data.
     //
     // Only a `sendCoAPData(_ data: Data, toEndpoint endpoint: NWEndpoint)` should be implemented.
@@ -58,7 +58,7 @@ public protocol SCCoAPTransportLayerProtocol: AnyObject {
     
 }
 
-public struct MessageTransportIdentifier: Hashable {
+public struct MessageTransportIdentifier: Equatable, Hashable {
     let token: UInt64;
     let endpoint: NWEndpoint
 }
