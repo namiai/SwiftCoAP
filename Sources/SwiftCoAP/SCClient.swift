@@ -435,7 +435,9 @@ extension SCClient: SCCoAPTransportLayerDelegate {
     
     public func transportLayerObject(_ transportLayerObject: SCCoAPTransportLayerProtocol, didFailWithError error: NSError) {
         notifyDelegateWithErrorCode(.transportLayerSendError, underlyingError: error)
-        transmissionTimer?.invalidate()
+        if let transmissionTimer = transmissionTimer {
+            transmissionTimer.invalidate()
+        }
         transmissionTimer = nil
     }
 }
