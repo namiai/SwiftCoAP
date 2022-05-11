@@ -83,11 +83,11 @@ public final class SCCoAPUDPTransportLayer {
     internal var messageIdsPerEndpoint:[NWEndpoint:UInt16] = [:]
     internal var listener: NWListener?
     internal var networkParameters: NWParameters = .udp
-
+    
     internal let operationsQueue = DispatchQueue(label: "swiftcoap.queue.operations", qos: .default)
     
     public required init() { }
-
+    
     internal func setupStateUpdateHandler(for connection: NWConnection) -> NWConnection {
         let endpoint = connection.endpoint
         connection.stateUpdateHandler = { [weak self] newState in
@@ -133,7 +133,7 @@ public final class SCCoAPUDPTransportLayer {
         
         self.startReads(from: connection)
     }
-
+    
     internal func mustGetConnection(forEndpoint endpoint: NWEndpoint) -> NWConnection {
         let connectionKey = endpoint
         // Reuse only connections in untroubled state
@@ -147,12 +147,12 @@ public final class SCCoAPUDPTransportLayer {
         connection.start(queue: DispatchQueue.global(qos: .default))
         return connection
     }
-
+    
     internal func startReads(from connection: NWConnection) {
         guard connection.state == .ready else {
             return
         }
-
+        
         connection.receiveMessage { [weak self] data, context, _, maybeError in
             guard let self = self else {
                 connection.cancel()
@@ -182,7 +182,7 @@ public final class SCCoAPUDPTransportLayer {
         os_log(">>> %@",log: .default, type:.debug, "Endpoint: \(connection.endpoint.debugDescription), Message \(message.toString())")
         
         let id = MessageTransportIdentifier(token: token, endpoint: connection.endpoint)
-
+        
         // if we received confirmable message nobody was expecting, send the reset command to stop observations
         /*
          https://datatracker.ietf.org/doc/html/rfc7641#section-3.5
@@ -203,7 +203,9 @@ public final class SCCoAPUDPTransportLayer {
         if let delegate = self.transportLayerDelegates[id] {
             delegate.delegate.transportLayerObject(self, didReceiveData: rawData, fromEndpoint: connection.endpoint)
             if delegate.observation == false && message.type == .acknowledgement {
-                self.transportLayerDelegates.removeValue(forKey: id)
+                operationsQueue.sync{ [weak self] in
+                    self?.transportLayerDelegates.removeValue(forKey: id)
+                }
             }
         }
     }
@@ -264,14 +266,14 @@ public final class SCCoAPUDPTransportLayer {
             /*
              
              Reset Message
-                A Reset message indicates that a specific message (Confirmable or
-                Non-confirmable) was received, but some context is missing to
-                properly process it.  This condition is usually caused when the
-                receiving node has rebooted and has forgotten some state that
-                would be required to interpret the message.  Provoking a Reset
-                message (e.g., by sending an Empty Confirmable message) is also
-                useful as an inexpensive check of the liveness of an endpoint
-                ("CoAP ping").
+             A Reset message indicates that a specific message (Confirmable or
+             Non-confirmable) was received, but some context is missing to
+             properly process it.  This condition is usually caused when the
+             receiving node has rebooted and has forgotten some state that
+             would be required to interpret the message.  Provoking a Reset
+             message (e.g., by sending an Empty Confirmable message) is also
+             useful as an inexpensive check of the liveness of an endpoint
+             ("CoAP ping").
              
              */
             self.sendEmptyMessageWithType(.confirmable, messageId: self.getMessageId(for: endpoint), token: nil, toEndpoint: endpoint)
@@ -282,7 +284,7 @@ public final class SCCoAPUDPTransportLayer {
 }
 
 extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
-
+    
     /// Passing a PSK to init sets all NWConnection and NWListener objects if any created
     /// to use DTLS with provided PSK.
     /// - Parameter psk: A Preshared Key in plain text form.
@@ -291,7 +293,7 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
         guard let psk = psk.data(using: .utf8) else { return nil }
         self.init(psk: psk, suite: suite)
     }
-
+    
     /// Passing a PSK to init sets all NWConnection and NWListener objects if any created
     /// to use DTLS with provided PSK.
     /// - Parameter psk: A Preshared Key.
@@ -300,7 +302,7 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
         self.init()
         networkParameters = networkParametersDTLSWith(psk: psk, suite: suite)
     }
-
+    
     /// NWParameters to use with all NWConnection and NWListener objects if any created.
     /// Helps to customize transport layer behaviour with non-standard connection options.
     /// E.g. setting certificate chalange, verifiction handlers for connections etc.
@@ -310,8 +312,8 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
         self.init()
         self.networkParameters = networkParameters
     }
-
-
+    
+    
     /// Retrieves new message id for endpoint
     /// There could be multiple clients using the same underlying transport, so it's important to have centralized
     /// message ids issuance
@@ -340,16 +342,16 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
             }
             return self.mustGetConnection(forEndpoint: endpoint)
         }) else { return }
-            os_log("<<< %@",log: .default, type:.debug, "Endpoint: \(endpoint.debugDescription), Message \(message.toString())")
-            connection.send(content: data, completion: .contentProcessed{ [weak self] error in
-                guard let self = self else { return }
-                if error != nil {
-                    delegate?.transportLayerObject(self, didFailWithError: error! as NSError)
-                    if let token = token {
-                        self.cancelMessageTransmission(to: endpoint, withToken: token)
-                    }
+        os_log("<<< %@",log: .default, type:.debug, "Endpoint: \(endpoint.debugDescription), Message \(message.toString())")
+        connection.send(content: data, completion: .contentProcessed{ [weak self] error in
+            guard let self = self else { return }
+            if error != nil {
+                delegate?.transportLayerObject(self, didFailWithError: error! as NSError)
+                if let token = token {
+                    self.cancelMessageTransmission(to: endpoint, withToken: token)
                 }
-            })
+            }
+        })
     }
     
     public func cancelMessageTransmission(to endpoint: NWEndpoint, withToken token: UInt64) {
@@ -357,7 +359,7 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
             self?.transportLayerDelegates.removeValue(forKey: MessageTransportIdentifier(token: token, endpoint: endpoint))
         }
     }
-
+    
     public func closeAllTransmissions() {
         let allEndpoints = self.connections.keys
         for endpoint in allEndpoints {
@@ -368,7 +370,7 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
     private func networkParametersDTLSWith(psk: Data, suite: SSLCipherSuite) -> NWParameters{
         NWParameters(dtls: tlsWithPSKOptions(psk: psk, suite: suite), udp: NWProtocolUDP.Options())
     }
-
+    
     private func tlsWithPSKOptions(psk: Data, suite: SSLCipherSuite) -> NWProtocolTLS.Options{
         let tlsOptions = NWProtocolTLS.Options()
         let semaphore = DispatchSemaphore(value: 0)
@@ -1340,9 +1342,9 @@ public class SCMessage: NSObject {
     }
     
     public func isObservation() -> Bool {
-       return self.options.first { (k,v) in
-           k == SCOption.observe.rawValue && v[0].allSatisfy({$0 == 0})
-       } != nil
+        return self.options.first { (k,v) in
+            k == SCOption.observe.rawValue && v[0].allSatisfy({$0 == 0})
+        } != nil
     }
     
     public func toString() -> String {
