@@ -204,7 +204,7 @@ public final class SCCoAPUDPTransportLayer {
             delegate.delegate.transportLayerObject(self, didReceiveData: rawData, fromEndpoint: connection.endpoint)
             if delegate.observation == false && message.type == .acknowledgement {
                 operationsQueue.sync{ [weak self] in
-                    self?.transportLayerDelegates.removeValue(forKey: id)
+                    _ = self?.transportLayerDelegates.removeValue(forKey: id)
                 }
             }
         }
@@ -976,7 +976,7 @@ public class SCMessage: NSObject {
     //MARK: Internal Methods (allowed to use)
     
     public convenience init(code: SCCodeValue, type: SCType, payload: Data?) {
-        self.init()   
+        self.init()
         self.code = code
         self.type = type
         self.payload = payload
