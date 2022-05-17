@@ -126,7 +126,9 @@ public final class SCCoAPUDPTransportLayer {
             }
             self.processPingTimer(timer: timer, endpoint: endpoint)
         }
-        self.connections[connection.endpoint]?.pingTimer = pingTimer
+        operationsQueue.async {
+            self.connections[connection.endpoint]?.pingTimer = pingTimer
+        }
         // timer should be added to the runloop different from current one,
         // it seems that the runloop powering state update handler prevents timers to fire
         RunLoop.main.add(pingTimer, forMode: .default)
@@ -143,7 +145,9 @@ public final class SCCoAPUDPTransportLayer {
         // Setup handler and start the new connection
         let connection = setupStateUpdateHandler(for: NWConnection(to: endpoint, using: networkParameters))
         
-        self.connections[connectionKey] = CoAPConnection(connection: connection, lastReceivedMessageTs: Date().timeIntervalSince1970, pingTimer: nil)
+        operationsQueue.async {
+            self.connections[connectionKey] = CoAPConnection(connection: connection, lastReceivedMessageTs: Date().timeIntervalSince1970, pingTimer: nil)
+        }
         connection.start(queue: DispatchQueue.global(qos: .default))
         return connection
     }
