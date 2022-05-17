@@ -10,8 +10,5 @@
       <FileRef
          location = "group:Example_Projects/SwiftCoAPClientExample/SwiftCoAPClientExample.xcodeproj">
       </FileRef>
-      <FileRef
-         location = "group:Example_Projects/SwiftCoAPServerExample/SwiftCoAPServerExample.xcodeproj">
-      </FileRef>
    </Group>
 </Workspace>

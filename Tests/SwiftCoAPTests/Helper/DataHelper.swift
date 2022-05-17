@@ -1,6 +1,6 @@
 //
 //  File.swift
-//  
+//
 //
 //  Created by Hoang Viet Tran on 07/04/2022.
 //
@@ -16,7 +16,7 @@ struct DataHelper {
             count,
             &bytes
         )
-        
+
         if status == errSecSuccess {
             return Data(bytes: bytes, count: count)
         } else {

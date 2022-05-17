@@ -1,93 +1,92 @@
 //
 //  SCClientTests.swift
-//  
+//
 //
 //  Created by Hoang Viet Tran on 04/04/2022.
 //
 
-import XCTest
 @testable import SwiftCoAP
+import XCTest
 
 class SCClientTests: XCTestCase {
     private var client: SCClient!
     private var endpoint1 = NWEndpointMock().endpoint1
     private var messageSentExpectation: XCTestExpectation!
     private var sentMessage: SCMessage?
-    
+
     internal var mockTransportLayer: MockSCCoAPTransportLayer!
-    
+
     override func setUp() {
         mockTransportLayer = MockSCCoAPTransportLayer(client: self)
         client = SCClient(delegate: self, transportLayerObject: mockTransportLayer)
     }
 
-    override func tearDown() {
-    }
+    override func tearDown() {}
 
     func testInitDoesSetDelegateCorrectly() {
         let noDelegateClient = SCClient(delegate: nil, transportLayerObject: mockTransportLayer)
-        
+
         XCTAssertNil(noDelegateClient.delegate)
     }
-    
+
     func testSendCoAPMessageWithoutPayload() {
         let msg = SCMessage(code: SCCodeValue(classValue: 0, detailValue: 01)!, type: .confirmable, payload: nil)
-        
+
         messageSentExpectation = expectation(description: "Did send message")
-        
+
         client.sendCoAPMessage(msg, endpoint: endpoint1)
-        
+
         waitForExpectations(timeout: 5)
-        XCTAssertNotNil(self.sentMessage)
-        XCTAssertEqual(msg, self.sentMessage)
+        XCTAssertNotNil(sentMessage)
+        XCTAssertEqual(msg, sentMessage)
     }
-    
+
     func testCancelObserve() {
         let msg = SCMessage(code: SCCodeValue(classValue: 0, detailValue: 01)!, type: .confirmable, payload: nil)
         msg.endpoint = endpoint1
         client.messageInTransmission = msg
-        
+
         client.cancelObserve()
-        
-        XCTAssertNotNil(self.mockTransportLayer.messageToSend)
-        XCTAssertTrue(self.mockTransportLayer.messageToSend?.type == .nonConfirmable)
+
+        XCTAssertNotNil(mockTransportLayer.messageToSend)
+        XCTAssertTrue(mockTransportLayer.messageToSend?.type == .nonConfirmable)
     }
-    
+
     func testCloseTransmission() {
         let msg = SCMessage(code: SCCodeValue(classValue: 0, detailValue: 01)!, type: .confirmable, payload: nil)
         msg.endpoint = endpoint1
         client.messageInTransmission = msg
         client.closeTransmission()
-        
-        XCTAssertTrue(self.mockTransportLayer.canceledMessageTransmission)
-        XCTAssertEqual(self.mockTransportLayer.canceledMessageTransmissionEndpoint, endpoint1)
+
+        XCTAssertTrue(mockTransportLayer.canceledMessageTransmission)
+        XCTAssertEqual(mockTransportLayer.canceledMessageTransmissionEndpoint, endpoint1)
     }
-    
+
     func testSendWithRetransmissionHandling() {
         let msg = SCMessage(code: SCCodeValue(classValue: 0, detailValue: 01)!, type: .confirmable, payload: nil)
         msg.endpoint = endpoint1
-        
+
         client.sendWithRentransmissionHandling()
         XCTAssertEqual(client.retransmissionCounter, 1)
-        
+
         client.sendWithRentransmissionHandling()
         XCTAssertEqual(client.retransmissionCounter, 2)
-        
+
         client.sendWithRentransmissionHandling()
         XCTAssertEqual(client.retransmissionCounter, 3)
-        
+
         client.sendWithRentransmissionHandling()
         XCTAssertEqual(client.retransmissionCounter, 4)
-        
+
         // by default max retransmission number is 4 cannot go over max
         client.sendWithRentransmissionHandling()
         XCTAssertEqual(client.retransmissionCounter, 4)
     }
-    
+
     func testSendWithRetransmissionHandlingWithCancelTransmission() {
         let msg = SCMessage(code: SCCodeValue(classValue: 0, detailValue: 01)!, type: .confirmable, payload: nil)
         msg.endpoint = endpoint1
-        
+
         client.sendWithRentransmissionHandling()
         XCTAssertEqual(client.retransmissionCounter, 1)
         client.closeTransmission()
@@ -104,20 +103,14 @@ class SCClientTests: XCTestCase {
         client.sendWithRentransmissionHandling()
         XCTAssertEqual(client.retransmissionCounter, 4)
     }
-
 }
 
 extension SCClientTests: SCClientDelegate {
+    func swiftCoapClient(_: SCClient, didReceiveMessage _: SCMessage) {}
 
-    func swiftCoapClient(_ client: SCClient, didReceiveMessage message: SCMessage) {
-        
-    }
-    
-    func swiftCoapClient(_ client: SCClient, didFailWithError error: NSError) {
-        
-    }
-    
-    func swiftCoapClient(_ client: SCClient, didSendMessage message: SCMessage, number: Int) {
+    func swiftCoapClient(_: SCClient, didFailWithError _: NSError) {}
+
+    func swiftCoapClient(_: SCClient, didSendMessage message: SCMessage, number _: Int) {
         sentMessage = message
         messageSentExpectation.fulfill()
     }

@@ -6,17 +6,17 @@
 //  Copyright (c) 2015 Wojtek Kordylewski. All rights reserved.
 //
 
-import UIKit
 import SwiftCoAP
+import UIKit
 
 class ExampleViewController: UIViewController {
-    @IBOutlet weak var textView: UITextView!
-    @IBOutlet weak var hostTextField: UITextField!
-    @IBOutlet weak var uriPathTextField: UITextField!
-    @IBOutlet weak var portTextField: UITextField!
-    
+    @IBOutlet var textView: UITextView!
+    @IBOutlet var hostTextField: UITextField!
+    @IBOutlet var uriPathTextField: UITextField!
+    @IBOutlet var portTextField: UITextField!
+
     let separatorLine = "\n-----------------\n"
-    
+
     var coapClient: SCClient!
 
     override func viewDidLoad() {
@@ -24,39 +24,38 @@ class ExampleViewController: UIViewController {
         let client = SCClient(delegate: self)
         client.sendToken = true
         client.autoBlock1SZX = 2
-        
-        //Advanced Settings
-        
-        //client.cachingActive = true
-        //client.httpProxyingData = ("localhost", 5683)
-        
-        self.coapClient = client
-        
-        //Default values, change if you want
+
+        // Advanced Settings
+
+        // client.cachingActive = true
+        // client.httpProxyingData = ("localhost", 5683)
+
+        coapClient = client
+
+        // Default values, change if you want
         hostTextField.text = "coap.me"
         portTextField.text = "5683"
     }
-    
+
     // MARK: Actions
-    
-    @IBAction func onClickDelete(_ sender: AnyObject) {
+
+    @IBAction func onClickDelete(_: AnyObject) {
         textView.text = ""
     }
-    
+
     @IBAction func onClickSendMessage(_ sender: AnyObject) {
         if sender is UIButton {
             view.endEditing(true)
         }
         let m = SCMessage(code: SCCodeValue(classValue: 0, detailValue: 01)!, type: .confirmable, payload: "test".data(using: String.Encoding.utf8))
-        
+
         if let stringData = uriPathTextField.text?.data(using: String.Encoding.utf8) {
             m.addOption(SCOption.uriPath.rawValue, data: stringData)
         }
-        
+
         if let portString = portTextField.text, let hostString = hostTextField.text, let port = UInt16(portString) {
-            coapClient.sendCoAPMessage(m, hostName:hostString,  port: port)
-        }
-        else {
+            coapClient.sendCoAPMessage(m, hostName: hostString, port: port)
+        } else {
             textView.text = "\(String(describing: textView.text))\nInvalid PORT"
         }
     }
@@ -78,10 +77,10 @@ extension ExampleViewController: UITextFieldDelegate {
 }
 
 extension ExampleViewController: SCClientDelegate {
-    func swiftCoapClient(_ client: SCClient, didReceiveMessage message: SCMessage) {
+    func swiftCoapClient(_: SCClient, didReceiveMessage message: SCMessage) {
         var payloadstring = ""
         if let pay = message.payload {
-            if let string = NSString(data: pay as Data, encoding:String.Encoding.utf8.rawValue) {
+            if let string = NSString(data: pay as Data, encoding: String.Encoding.utf8.rawValue) {
                 payloadstring = String(string)
             }
         }
@@ -100,17 +99,16 @@ extension ExampleViewController: SCClientDelegate {
             self.textView.text = self.separatorLine + firstPartString + optString + self.separatorLine + self.textView.text
         }
     }
-    
-    func swiftCoapClient(_ client: SCClient, didFailWithError error: NSError) {
+
+    func swiftCoapClient(_: SCClient, didFailWithError error: NSError) {
         DispatchQueue.main.async {
             self.textView.text = "Failed with Error \(error.localizedDescription)" + self.separatorLine + self.separatorLine + self.textView.text
         }
     }
-    
-    func swiftCoapClient(_ client: SCClient, didSendMessage message: SCMessage, number: Int) {
+
+    func swiftCoapClient(_: SCClient, didSendMessage message: SCMessage, number: Int) {
         DispatchQueue.main.async {
             self.textView.text = "Message sent (\(number)) with type: \(message.type.shortString()) with id: \(String(describing: message.messageId))\n" + self.separatorLine + self.separatorLine + self.textView.text
         }
-
     }
 }
