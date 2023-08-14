@@ -120,7 +120,10 @@ public final class SCCoAPUDPTransportLayer {
                 timer.invalidate()
                 return
             }
-            self.processPingTimer(timer: timer, endpoint: endpoint)
+            
+            operationsQueue.async { [weak self] in
+                self?.processPingTimer(timer: timer, endpoint: endpoint)
+            }
         }
         operationsQueue.async { [weak self] in
             self?.connections[connection.endpoint]?.pingTimer = pingTimer
