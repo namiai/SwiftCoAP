@@ -121,7 +121,7 @@ public final class SCCoAPUDPTransportLayer {
                 return
             }
             
-            self.operationsQueue.async { [weak self] in
+            self.operationsQueue.sync { [weak self] in
                 self?.processPingTimer(timer: timer, endpoint: endpoint)
             }
         }
