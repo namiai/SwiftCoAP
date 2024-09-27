@@ -73,7 +73,7 @@ public struct CoAPConnection {
 
 /// SC CoAP UDP Transport Layer: This class is the default transport layer handler, sending data via UDP with help of `Network.framework`. If you want to create a custom transport layer handler, you have to create a custom class and adopt the SCCoAPTransportLayerProtocol. Next you have to pass your class to the init method of SCClient: init(delegate: SCClientDelegate?, transportLayerObject: SCCoAPTransportLayerProtocol). You will than get callbacks to send CoAP data and have to inform your delegate (in this case an object of type SCClient) when you receive a response by using the callbacks from SCCoAPTransportLayerDelegate.
 public final class SCCoAPUDPTransportLayer {
-    internal let kPingInterval: TimeInterval = 1.5
+    internal var pingInterval: TimeInterval? = 1.5
     internal var transportLayerDelegates: [MessageTransportIdentifier: MessageTransportDelegate] = [:]
     internal var connections: [NWEndpoint: CoAPConnection] = [:]
     internal var messageIdsPerEndpoint: [NWEndpoint: UInt16] = [:]
@@ -115,19 +115,21 @@ public final class SCCoAPUDPTransportLayer {
     }
 
     internal func handleReadyState(forEndpoint endpoint: NWEndpoint, connection: NWConnection) {
-        let pingTimer = Timer(timeInterval: kPingInterval, repeats: true) { [weak self] timer in
-            guard let self = self else {
-                timer.invalidate()
-                return
+        if let pingInterval {
+            let pingTimer = Timer(timeInterval: pingInterval, repeats: true) { [weak self] timer in
+                guard let self = self else {
+                    timer.invalidate()
+                    return
+                }
+                self.processPingTimer(timer: timer, interval: pingInterval, endpoint: endpoint)
             }
-            self.processPingTimer(timer: timer, endpoint: endpoint)
+            operationsQueue.async { [weak self] in
+                self?.connections[connection.endpoint]?.pingTimer = pingTimer
+            }
+            // timer should be added to the runloop different from current one,
+            // it seems that the runloop powering state update handler prevents timers to fire
+            RunLoop.main.add(pingTimer, forMode: .default)
         }
-        operationsQueue.async { [weak self] in
-            self?.connections[connection.endpoint]?.pingTimer = pingTimer
-        }
-        // timer should be added to the runloop different from current one,
-        // it seems that the runloop powering state update handler prevents timers to fire
-        RunLoop.main.add(pingTimer, forMode: .default)
 
         startReads(from: connection)
     }
@@ -238,7 +240,7 @@ public final class SCCoAPUDPTransportLayer {
         }
     }
 
-    internal func processPingTimer(timer: Timer, endpoint: NWEndpoint) {
+    internal func processPingTimer(timer: Timer, interval pingInterval: TimeInterval, endpoint: NWEndpoint) {
         guard let coapConnection = connections[endpoint] else {
             timer.invalidate()
             return
@@ -250,7 +252,7 @@ public final class SCCoAPUDPTransportLayer {
         // if there were no messages for 3*ping intervals -> connection is stale and probably broken
         // The best we can do in this situation is to cancel the connection and let upper levels
         // decide what to do
-        if coapConnection.lastReceivedMessageTs + kPingInterval * 3 < Date().timeIntervalSince1970 {
+        if coapConnection.lastReceivedMessageTs + pingInterval * 3 < Date().timeIntervalSince1970 {
             os_log("Ping timeout exceeded, closing the connection for endpoint %@", log: .default, type: .info, endpoint.debugDescription)
             notifyDelegatesAboutError(for: endpoint, error: SCCoAPTransportLayerError.pingTimeoutError)
             cancelConnection(to: endpoint)
@@ -259,8 +261,8 @@ public final class SCCoAPUDPTransportLayer {
         // if the most recent message was received within a duration of keep-alive interval then
         // we need to extend the timer to get the full interval of inactivity
         let elapsedFromLastMessage = floor(Date().timeIntervalSince1970 - coapConnection.lastReceivedMessageTs)
-        if elapsedFromLastMessage < kPingInterval {
-            coapConnection.pingTimer?.fireDate = Date().addingTimeInterval(kPingInterval - elapsedFromLastMessage)
+        if elapsedFromLastMessage < pingInterval {
+            coapConnection.pingTimer?.fireDate = Date().addingTimeInterval(pingInterval - elapsedFromLastMessage)
         } else {
             os_log("Sending ping message to endpoint %@", log: .default, type: .debug, endpoint.debugDescription)
             /*
@@ -278,7 +280,7 @@ public final class SCCoAPUDPTransportLayer {
              */
             sendEmptyMessageWithType(.confirmable, messageId: getMessageId(for: endpoint), token: nil, toEndpoint: endpoint)
             // +1 here to give the message time to go to the device and back and avoid timer firing too early
-            coapConnection.pingTimer?.fireDate = Date().addingTimeInterval(kPingInterval + 1)
+            coapConnection.pingTimer?.fireDate = Date().addingTimeInterval(pingInterval + 1)
         }
     }
 }
@@ -288,18 +290,23 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
     /// to use DTLS with provided PSK.
     /// - Parameter psk: A Preshared Key in plain text form.
     /// - Parameter suite: A cipher suite to be used for TLS communications, defaults to `TLS_PSK_WITH_AES_128_GCM_SHA256` when not specified.
-    public convenience init?(psk: String, suite: SSLCipherSuite = TLS_PSK_WITH_AES_128_GCM_SHA256) {
+    /// - Parameter pingInterval: An optional TimeInterval to ping the server, defaults to 1.5 sec. If pings failed three times repeatedly the connection gets cancelled.
+    ///     When set to `nil` no pings are going to be sent and the connection would be only cancelled by consumer.
+    public convenience init?(psk: String, suite: SSLCipherSuite = TLS_PSK_WITH_AES_128_GCM_SHA256, pingInterval: TimeInterval? = 1.5) {
         guard let psk = psk.data(using: .utf8) else { return nil }
-        self.init(psk: psk, suite: suite)
+        self.init(psk: psk, suite: suite, pingInterval: pingInterval)
     }
 
     /// Passing a PSK to init sets all NWConnection and NWListener objects if any created
     /// to use DTLS with provided PSK.
     /// - Parameter psk: A Preshared Key.
     /// - Parameter suite: A cipher suite to be used for TLS communications, defaults to `TLS_PSK_WITH_AES_128_GCM_SHA256` when not specified.
-    public convenience init(psk: Data, suite: SSLCipherSuite = TLS_PSK_WITH_AES_128_GCM_SHA256) {
+    /// - Parameter pingInterval: An optional TimeInterval to ping the server, defaults to 1.5 sec. If pings failed three times repeatedly the connection gets cancelled.
+    ///     When set to `nil` no pings are going to be sent and the connection would be only cancelled by consumer.
+    public convenience init(psk: Data, suite: SSLCipherSuite = TLS_PSK_WITH_AES_128_GCM_SHA256, pingInterval: TimeInterval? = 1.5) {
         self.init()
-        networkParameters = networkParametersDTLSWith(psk: psk, suite: suite)
+        self.networkParameters = networkParametersDTLSWith(psk: psk, suite: suite)
+        self.pingInterval = pingInterval
     }
 
     /// NWParameters to use with all NWConnection and NWListener objects if any created.
@@ -307,9 +314,12 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
     /// E.g. setting certificate chalange, verifiction handlers for connections etc.
     /// - Parameter networkParameters: A `NWParameters` object holding all the custom setup
     /// to be passed to `NWConnection` or `NWListener` if any.
-    public convenience init(networkParameters: NWParameters) {
+    /// - Parameter pingInterval: An optional TimeInterval to ping the server, defaults to 1.5 sec. If pings failed three times repeatedly the connection gets cancelled.
+    ///     When set to `nil` no pings are going to be sent and the connection would be only cancelled by consumer. 
+    public convenience init(networkParameters: NWParameters, pingInterval: TimeInterval? = 1.5) {
         self.init()
         self.networkParameters = networkParameters
+        self.pingInterval = pingInterval
     }
 
     /// Retrieves new message id for endpoint
@@ -352,7 +362,7 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
     }
 
     public func cancelMessageTransmission(to endpoint: NWEndpoint, withToken token: UInt64) {
-        _ = operationsQueue.async { [weak self] in
+        operationsQueue.async { [weak self] in
             self?.transportLayerDelegates.removeValue(forKey: MessageTransportIdentifier(token: token, endpoint: endpoint))
         }
     }
