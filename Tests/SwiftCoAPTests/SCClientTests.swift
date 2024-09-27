@@ -30,7 +30,15 @@ class SCClientTests: XCTestCase {
     }
 
     func testSendCoAPMessageWithoutPayload() {
-        let msg = SCMessage(code: SCCodeValue(classValue: 0, detailValue: 01)!, type: .confirmable, payload: nil)
+        let msg = SCMessage(code: SCCodeValue(classValue: 0, detailValue: 01)!, type: .confirmable, payload: "Hello, there!".data(using: .utf8))
+
+        msg.token = 1000
+        
+        print(msg.options)
+        print(msg.messageId)
+        print(msg.token)
+        print([UInt8]("Hello, there!".data(using: .utf8) ?? Data()))
+        print([UInt8](msg.toData()!))
 
         messageSentExpectation = expectation(description: "Did send message")
 
