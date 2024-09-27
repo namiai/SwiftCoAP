@@ -241,14 +241,25 @@ public final class SCCoAPUDPTransportLayer {
     }
 
     internal func processPingTimer(timer: Timer, interval pingInterval: TimeInterval, endpoint: NWEndpoint) {
-        guard let coapConnection = connections[endpoint] else {
-            timer.invalidate()
-            return
+        operationsQueue.async { [weak self] in
+            guard let self = self, let coapConnection = self.connections[endpoint] else {
+                timer.invalidate()
+                return
+            }
+            
+            guard coapConnection.connection.state != .cancelled else {
+                timer.invalidate()
+                return
+            }
+            
+            DispatchQueue.main.async {
+                self.handlePingTimer(with: timer, pingInterval: pingInterval, endpoint: endpoint, connection: coapConnection)
+            }
         }
-        guard coapConnection.connection.state != .cancelled else {
-            timer.invalidate()
-            return
-        }
+        
+    }
+    
+    internal func handlePingTimer(with timer: Timer, pingInterval: TimeInterval, endpoint: NWEndpoint, connection coapConnection: CoAPConnection) {
         // if there were no messages for 3*ping intervals -> connection is stale and probably broken
         // The best we can do in this situation is to cancel the connection and let upper levels
         // decide what to do
