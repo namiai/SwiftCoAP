@@ -204,7 +204,7 @@ public final class SCCoAPUDPTransportLayer {
         }
         if let delegate = transportLayerDelegates[id] {
             delegate.delegate.transportLayerObject(self, didReceiveData: rawData, fromEndpoint: connection.endpoint)
-            if delegate.observation == false, message.type == .acknowledgement {
+            if delegate.observation == false, message.code == SCCodeSample.content.codeValue() {
                 operationsQueue.sync { [weak self] in
                     _ = self?.transportLayerDelegates.removeValue(forKey: id)
                 }
