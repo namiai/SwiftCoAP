@@ -79,7 +79,7 @@ public final class SCCoAPUDPTransportLayer {
     internal var messageIdsPerEndpoint: [NWEndpoint: UInt16] = [:]
     internal var listener: NWListener?
     internal var networkParameters: NWParameters = .udp
-
+    private var establishingConnectionTimeoutTimer: Timer? = nil
     internal let operationsQueue = DispatchQueue(label: "swiftcoap.queue.operations", qos: .default)
 
     public required init() {}
@@ -99,9 +99,23 @@ public final class SCCoAPUDPTransportLayer {
                 os_log("Connection to ENDPOINT %@ entered WAITING state. Reason %@", log: .default, type: .info, endpoint.debugDescription, reason.debugDescription)
             case .preparing:
                 os_log("Connection to ENDPOINT %@ entered PREPAIRING state", log: .default, type: .info, endpoint.debugDescription)
+                // sometimes the connection gets stuck in the "preparing" state
+                // that happened when the device was discoverable on the local network (via bonjour) but it
+                // was in different, isolated network from the phone
+                // Even when changing the Wi-Fi connection to the same network as the devices
+                // the connection never exited the "preparing" state.
+                // This timer makes sure we fail the connection and let upper layers to retry
+                let establishingConnectionTimeoutTimer = Timer(timeInterval: 2, repeats: false, block: { [weak self] _ in
+                    guard let self = self else { return }
+                    self.transportLayerDelegates.forEach { $0.value.delegate.transportLayerObject(self, didFailWithError: NSError(domain: SCMessage.kCoapErrorDomain, code: -1001)) }
+                    self.cancelConnection(to: endpoint)
+                })
+                RunLoop.main.add(establishingConnectionTimeoutTimer, forMode: .default)
+                self?.establishingConnectionTimeoutTimer = establishingConnectionTimeoutTimer
             case .ready:
                 os_log("Connection to ENDPOINT %@ entered READY state", log: .default, type: .info, endpoint.debugDescription)
                 guard let self = self else { return }
+                self.establishingConnectionTimeoutTimer?.invalidate()
                 self.handleReadyState(forEndpoint: endpoint, connection: connection)
             case .cancelled:
                 os_log("Connection to ENDPOINT %@ is CANCELLED", log: .default, type: .info, endpoint.debugDescription)
@@ -944,7 +958,7 @@ public class SCMessage: NSObject {
     static let kCoapVersion = 0b01
     static let kProxyCoAPTypeKey = "COAP_TYPE"
 
-    static let kCoapErrorDomain = "SwiftCoapErrorDomain"
+    public static let kCoapErrorDomain = "SwiftCoapErrorDomain"
     static let kAckTimeout = 2.0
     static let kAckRandomFactor = 1.5
     static let kMaxRetransmit = 4
