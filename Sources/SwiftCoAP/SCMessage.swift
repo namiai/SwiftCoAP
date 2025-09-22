@@ -94,11 +94,21 @@ public final class SCCoAPUDPTransportLayer {
                 self.transportLayerDelegates.forEach { $0.value.delegate.transportLayerObject(self, didFailWithError: error as NSError) }
                 self.cancelConnection(to: endpoint)
             case .setup:
+                #if DEBUG
                 os_log("Connection to ENDPOINT %@ entered SETUP state", log: .default, type: .info, endpoint.debugDescription)
+                #else
+                break
+                #endif
             case let .waiting(reason):
+                #if DEBUG
                 os_log("Connection to ENDPOINT %@ entered WAITING state. Reason %@", log: .default, type: .info, endpoint.debugDescription, reason.debugDescription)
+                #else
+                _ = reason
+                #endif
             case .preparing:
+                #if DEBUG
                 os_log("Connection to ENDPOINT %@ entered PREPAIRING state", log: .default, type: .info, endpoint.debugDescription)
+                #endif
                 // sometimes the connection gets stuck in the "preparing" state
                 // that happened when the device was discoverable on the local network (via bonjour) but it
                 // was in different, isolated network from the phone
@@ -113,16 +123,24 @@ public final class SCCoAPUDPTransportLayer {
                 RunLoop.main.add(establishingConnectionTimeoutTimer, forMode: .default)
                 self?.establishingConnectionTimeoutTimer = establishingConnectionTimeoutTimer
             case .ready:
+                #if DEBUG
                 os_log("Connection to ENDPOINT %@ entered READY state", log: .default, type: .info, endpoint.debugDescription)
+                #endif
                 guard let self = self else { return }
                 self.establishingConnectionTimeoutTimer?.invalidate()
                 self.handleReadyState(forEndpoint: endpoint, connection: connection)
             case .cancelled:
+                #if DEBUG
                 os_log("Connection to ENDPOINT %@ is CANCELLED", log: .default, type: .info, endpoint.debugDescription)
+                #endif
                 guard let self = self else { return }
                 self.cancelConnection(to: endpoint)
             @unknown default:
+                #if DEBUG
                 os_log("Connection to ENDPOINT %@ is in UNKNOWN state", log: .default, type: .info, endpoint.debugDescription)
+                #else
+                break
+                #endif
             }
         }
         return connection
@@ -194,7 +212,9 @@ public final class SCCoAPUDPTransportLayer {
         let token = message.token
         updateMessageId(for: connection.endpoint, newMessageId: message.messageId)
         updateLastReceivedMessageTs(for: connection.endpoint)
+        #if DEBUG
         os_log(">>> %@", log: .default, type: .debug, "Endpoint: \(connection.endpoint.debugDescription), Message \(message.toString())")
+        #endif
 
         let id = MessageTransportIdentifier(token: token, endpoint: connection.endpoint)
 
@@ -277,7 +297,9 @@ public final class SCCoAPUDPTransportLayer {
         // The best we can do in this situation is to cancel the connection and let upper levels
         // decide what to do
         if coapConnection.lastReceivedMessageTs + kPingInterval * 3 < Date().timeIntervalSince1970 {
+            #if DEBUG
             os_log("Ping timeout exceeded, closing the connection for endpoint %@", log: .default, type: .info, endpoint.debugDescription)
+            #endif
             notifyDelegatesAboutError(for: endpoint, error: SCCoAPTransportLayerError.pingTimeoutError)
             cancelConnection(to: endpoint)
             return
@@ -288,7 +310,9 @@ public final class SCCoAPUDPTransportLayer {
         if elapsedFromLastMessage < kPingInterval {
             coapConnection.pingTimer?.fireDate = Date().addingTimeInterval(kPingInterval - elapsedFromLastMessage)
         } else {
+            #if DEBUG
             os_log("Sending ping message to endpoint %@", log: .default, type: .debug, endpoint.debugDescription)
+            #endif
             /*
 
              Reset Message
@@ -365,7 +389,9 @@ extension SCCoAPUDPTransportLayer: SCCoAPTransportLayerProtocol {
             }
             return self.mustGetConnection(forEndpoint: endpoint)
         }) else { return }
+        #if DEBUG
         os_log("<<< %@", log: .default, type: .debug, "Endpoint: \(endpoint.debugDescription), Message \(message.toString())")
+        #endif
         connection.send(content: data, completion: .contentProcessed { [weak self] error in
             guard let self = self else { return }
             if error != nil {
