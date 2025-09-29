@@ -14,7 +14,7 @@ class SCClientTests: XCTestCase {
     private var messageSentExpectation: XCTestExpectation!
     private var sentMessage: SCMessage?
 
-    internal var mockTransportLayer: MockSCCoAPTransportLayer!
+    var mockTransportLayer: MockSCCoAPTransportLayer!
 
     override func setUp() {
         mockTransportLayer = MockSCCoAPTransportLayer(client: self)

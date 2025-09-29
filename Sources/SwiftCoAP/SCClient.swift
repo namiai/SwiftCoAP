@@ -69,9 +69,9 @@ public class SCClient {
 
     fileprivate var transportLayerObject: SCCoAPTransportLayerProtocol
     fileprivate var transmissionTimer: Timer?
-    internal var messageInTransmission: SCMessage?
+    var messageInTransmission: SCMessage?
     fileprivate var currentToken: UInt64 = .init(arc4random_uniform(0xFFFF_FFFF) + 1) + (UInt64(arc4random_uniform(0xFFFF_FFFF) + 1) << 32)
-    internal var retransmissionCounter = 0
+    var retransmissionCounter = 0
     fileprivate var currentTransmitWait = 0.0
     fileprivate var recentNotificationInfo: (Date, UInt)?
     fileprivate lazy var cachedMessagePairs = [SCMessage: SCMessage]()

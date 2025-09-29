@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  DataHelper.swift
 //
 //
 //  Created by Hoang Viet Tran on 07/04/2022.
@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct DataHelper {
+enum DataHelper {
     static func secureRandomData(count: Int) throws -> Data? {
         var bytes = [Int8](repeating: 0, count: count)
 
